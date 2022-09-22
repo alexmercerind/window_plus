@@ -19,6 +19,14 @@ HWND WindowPlusPlugin::GetWindow() {
   return ::GetAncestor(registrar_->GetView()->GetNativeWindow(), GA_ROOT);
 }
 
+RECT WindowPlusPlugin::GetMonitorRect() {
+  auto info = MONITORINFO{};
+  info.cbSize = DWORD(sizeof(MONITORINFO));
+  auto monitor = MonitorFromWindow(GetWindow(), MONITOR_DEFAULTTONEAREST);
+  GetMonitorInfoW(monitor, static_cast<LPMONITORINFO>(&info));
+  return info.rcWork;
+}
+
 RTL_OSVERSIONINFOW WindowPlusPlugin::GetWindowsVersion() {
   auto module = ::GetModuleHandleW(L"ntdll.dll");
   if (module) {
@@ -99,6 +107,33 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
         return 0;
       }
       auto params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+      // Adjust the window client area, so that content doesn't appear cropped
+      // out of the screen, when it is maximized.
+      auto monitor_rect = GetMonitorRect();
+      if (params->lppos) {
+        if ((params->lppos->x < monitor_rect.left) &&
+            (params->lppos->y < monitor_rect.top) &&
+            (params->lppos->cx > (monitor_rect.right - monitor_rect.left)) &&
+            (params->lppos->cy > (monitor_rect.bottom - monitor_rect.top))) {
+          params->lppos->x = monitor_rect.left;
+          params->lppos->y = monitor_rect.top;
+          params->lppos->cx = monitor_rect.right - monitor_rect.left;
+          params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
+        }
+      }
+      // I have no idea why this |for| loop exists but whatever.
+      for (int i = 0; i < 3; i++) {
+        if ((params->rgrc[i].left < monitor_rect.left) &&
+            (params->rgrc[i].top < monitor_rect.top) &&
+            (params->rgrc[i].right > monitor_rect.right) &&
+            (params->rgrc[i].bottom > monitor_rect.bottom)) {
+          params->rgrc[i].left = monitor_rect.left;
+          params->rgrc[i].top = monitor_rect.top;
+          params->rgrc[i].right = monitor_rect.right;
+          params->rgrc[i].bottom = monitor_rect.bottom;
+        }
+      }
+      // Handle the window in restored state.
       const POINT border{::GetSystemMetrics(SM_CXFRAME) +
                              ::GetSystemMetrics(SM_CXPADDEDBORDER),
                          ::GetSystemMetrics(SM_CYFRAME) +
@@ -171,7 +206,7 @@ void WindowPlusPlugin::HandleMethodCall(
       auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
                      SWP_NOSIZE | SWP_FRAMECHANGED;
       ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
-      ::ShowWindow(GetWindow(), SW_NORMAL);
+      ::ShowWindow(GetWindow(), SW_SHOWMAXIMIZED);
     }
     result->Success(flutter::EncodableValue(nullptr));
   } else {

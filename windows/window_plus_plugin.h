@@ -3,7 +3,6 @@
 
 #include <Windows.h>
 #include <dwmapi.h>
-
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <windowsx.h>
@@ -28,6 +27,8 @@ class WindowPlusPlugin : public flutter::Plugin {
 
  private:
   HWND GetWindow();
+
+  RECT GetMonitorRect();
 
   RTL_OSVERSIONINFOW GetWindowsVersion();
 
