@@ -2,8 +2,11 @@
 #define FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_
 
 #include <Windows.h>
+#include <dwmapi.h>
+
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
+#include <windowsx.h>
 
 #include <functional>
 #include <memory>
@@ -32,6 +35,9 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   std::optional<HRESULT> WindowProcDelegate(HWND hwnd, UINT message,
                                             WPARAM wparam, LPARAM lparam);
+
+  static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
+                                 LPARAM lparam, UINT_PTR id, DWORD_PTR data);
 
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& method_call,

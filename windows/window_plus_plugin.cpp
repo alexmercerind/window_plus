@@ -1,8 +1,12 @@
 #include "window_plus_plugin.h"
 
+#include <Commctrl.h>
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
+
+#pragma comment(lib, "dwmapi")
+#pragma comment(lib, "comctl32.lib")
 
 namespace window_plus {
 
@@ -45,7 +49,50 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
       return 1;
     }
     case WM_NCHITTEST: {
-      break;
+      POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+      const POINT border{::GetSystemMetrics(SM_CXFRAME) +
+                             ::GetSystemMetrics(SM_CXPADDEDBORDER),
+                         ::GetSystemMetrics(SM_CYFRAME) +
+                             ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      RECT rect;
+      ::GetWindowRect(GetWindow(), &rect);
+      // Bit values to handle multiple regions at once at corners.
+      // Determined values are kept, while others are multiplied by |FALSE|.
+      enum {
+        client = 0b0000,
+        left = 0b0001,
+        right = 0b0010,
+        top = 0b0100,
+        bottom = 0b1000,
+      };
+      // Here border values are added/subtracted from the window hitbox to make
+      // resize border lie outside of the actual client area.
+      // The top-border is handled in child Flutter view's proc.
+      const auto result = left * (cursor.x < (rect.left + border.x)) |
+                          right * (cursor.x >= (rect.right - border.x)) |
+                          top * (cursor.y < (rect.top + border.y)) |
+                          bottom * (cursor.y >= (rect.bottom - border.y));
+
+      switch (result) {
+        case left:
+          return HTLEFT;
+        case right:
+          return HTRIGHT;
+        case top:
+          return HTTOP;
+        case bottom:
+          return HTBOTTOM;
+        case top | left:
+          return HTTOPLEFT;
+        case top | right:
+          return HTTOPRIGHT;
+        case bottom | left:
+          return HTBOTTOMLEFT;
+        case bottom | right:
+          return HTBOTTOMRIGHT;
+      }
+      // The window region itself.
+      return HTCLIENT;
     }
     case WM_NCCALCSIZE: {
       if (!wparam) {
@@ -66,9 +113,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
         // transparent, thus it feels like the resize border is outside client
         // area but it is actually not, instead the actual client area size is
         // reduced.
-        // The thing to note here is that the top margins are not changed (see
-        // behavior of file explorer for example) & |HTTOP| is handled on the
-        // parent HWND.
+        // The thing to note here is that the top border is not reduced.
+        // This is because we want to keep the top resize border.
         params->rgrc[0].bottom -= border.y;
         params->rgrc[0].left += border.x;
         params->rgrc[0].right -= border.x;
@@ -77,6 +123,36 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
     }
   }
   return std::nullopt;
+}
+
+LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
+                                          WPARAM wparam, LPARAM lparam,
+                                          UINT_PTR id, DWORD_PTR data) {
+  switch (message) {
+    case WM_NCHITTEST: {
+      // This subclass proc is only used to handle the top resize border.
+      // This means sending |HTTRANSPARENT| from the child window for the top
+      // region of the window. It will cause the actual parent window to receive
+      // the |WM_NCHITTEST| message and handle |HTTOP|.
+      RECT rect;
+      ::GetWindowRect(window, &rect);
+      if (rect.top <= 0) {
+        return HTCLIENT;
+      }
+      POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+      const POINT border{::GetSystemMetrics(SM_CXFRAME) +
+                             ::GetSystemMetrics(SM_CXPADDEDBORDER),
+                         ::GetSystemMetrics(SM_CYFRAME) +
+                             ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      // To allow interraction with parent HWND for |HTTOP|.
+      if (cursor.y < rect.top + border.y) {
+        return HTTRANSPARENT;
+      }
+      // Actual Flutter content, keep it interactive.
+      return HTCLIENT;
+    }
+  }
+  return DefSubclassProc(window, message, wparam, lparam);
 }
 
 void WindowPlusPlugin::HandleMethodCall(
@@ -88,6 +164,13 @@ void WindowPlusPlugin::HandleMethodCall(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, std::placeholders::_4));
+      ::SetWindowSubclass(registrar_->GetView()->GetNativeWindow(),
+                          ChildWindowProc, 1, 0);
+      auto margins = MARGINS{0, 0, 0, 1};
+      ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
+      auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
+                     SWP_NOSIZE | SWP_FRAMECHANGED;
+      ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
       ::ShowWindow(GetWindow(), SW_NORMAL);
     }
     result->Success(flutter::EncodableValue(nullptr));
