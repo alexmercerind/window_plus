@@ -67,20 +67,22 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
       // Bit values to handle multiple regions at once at corners.
       // Determined values are kept, while others are multiplied by |FALSE|.
       enum {
-        client = 0b0000,
-        left = 0b0001,
-        right = 0b0010,
-        top = 0b0100,
-        bottom = 0b1000,
+        client = 0b00000,
+        left = 0b00010,
+        right = 0b00100,
+        top = 0b01000,
+        bottom = 0b10000,
       };
       // Here border values are added/subtracted from the window hitbox to make
       // resize border lie outside of the actual client area.
       // The top-border is handled in child Flutter view's proc.
-      const auto result = left * (cursor.x < (rect.left + border.x)) |
-                          right * (cursor.x >= (rect.right - border.x)) |
-                          top * (cursor.y < (rect.top + border.y)) |
-                          bottom * (cursor.y >= (rect.bottom - border.y));
-
+      const auto result =
+          left * (cursor.x < (rect.left + border.x)) |
+          right * (cursor.x >= (rect.right - border.x)) |
+          top * (cursor.y < (rect.top + border.y) &&
+                 /* Do not show top resize border in maximized state. */
+                 rect.top > 0) |
+          bottom * (cursor.y >= (rect.bottom - border.y));
       switch (result) {
         case left:
           return HTLEFT;
@@ -99,7 +101,14 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
         case bottom | right:
           return HTBOTTOMRIGHT;
       }
-      // The window region itself.
+      // Handle the title bar.
+      auto title_bar = GetSystemMetrics(SM_CYFRAME) +
+                       GetSystemMetrics(SM_CYCAPTION) +
+                       GetSystemMetrics(SM_CXPADDEDBORDER);
+      if (cursor.y < rect.top + title_bar) {
+        return HTCAPTION;
+      }
+      // The client area itself i.e. Flutter.
       return HTCLIENT;
     }
     case WM_NCCALCSIZE: {
@@ -169,18 +178,21 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
       // This means sending |HTTRANSPARENT| from the child window for the top
       // region of the window. It will cause the actual parent window to receive
       // the |WM_NCHITTEST| message and handle |HTTOP|.
+      // Also cut the section for the title-bar move area i.e. |HTCAPTION|.
       RECT rect;
       ::GetWindowRect(window, &rect);
-      if (rect.top <= 0) {
-        return HTCLIENT;
-      }
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
       const POINT border{::GetSystemMetrics(SM_CXFRAME) +
                              ::GetSystemMetrics(SM_CXPADDEDBORDER),
                          ::GetSystemMetrics(SM_CYFRAME) +
                              ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      auto title_bar = GetSystemMetrics(SM_CYFRAME) +
+                       GetSystemMetrics(SM_CYCAPTION) +
+                       GetSystemMetrics(SM_CXPADDEDBORDER);
       // To allow interraction with parent HWND for |HTTOP|.
       if (cursor.y < rect.top + border.y) {
+        return HTTRANSPARENT;
+      } else if (cursor.y < rect.top + title_bar) {
         return HTTRANSPARENT;
       }
       // Actual Flutter content, keep it interactive.
