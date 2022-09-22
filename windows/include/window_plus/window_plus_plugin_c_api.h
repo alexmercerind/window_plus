@@ -1,5 +1,5 @@
-#ifndef FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_C_API_H_
-#define FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_C_API_H_
+#ifndef WINDOW_PLUS_WINDOW_PLUS_PLUGIN_C_API_H_
+#define WINDOW_PLUS_WINDOW_PLUS_PLUGIN_C_API_H_
 
 #include <flutter_plugin_registrar.h>
 
@@ -20,4 +20,4 @@ FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiRegisterWithRegistrar(
 }  // extern "C"
 #endif
 
-#endif  // FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_C_API_H_
+#endif  // WINDOW_PLUS_WINDOW_PLUS_PLUGIN_C_API_H_
