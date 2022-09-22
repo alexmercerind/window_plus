@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:window_plus_example/src/native.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await WindowPlus.instance.ensureInitialized();
   runApp(const MyApp());
 }
 
