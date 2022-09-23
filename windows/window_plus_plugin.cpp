@@ -180,7 +180,10 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
                              ::GetSystemMetrics(SM_CXPADDEDBORDER),
                          ::GetSystemMetrics(SM_CYFRAME) +
                              ::GetSystemMetrics(SM_CXPADDEDBORDER)};
-      if (cursor.y < rect.top + border.y) {
+      if (
+          // No need to make room for resize border in maximized state.
+          !::IsZoomed(reinterpret_cast<HWND>(data)) &&
+          cursor.y < rect.top + border.y) {
         return HTTRANSPARENT;
       }
       // Actual Flutter content, keep it interactive.
@@ -203,7 +206,8 @@ void WindowPlusPlugin::HandleMethodCall(
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, std::placeholders::_4));
       ::SetWindowSubclass(registrar_->GetView()->GetNativeWindow(),
-                          ChildWindowProc, 1, 0);
+                          ChildWindowProc, 1,
+                          reinterpret_cast<DWORD_PTR>(GetWindow()));
       auto margins = MARGINS{0, 0, 0, 1};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
       auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
@@ -211,13 +215,8 @@ void WindowPlusPlugin::HandleMethodCall(
       ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
       ::ShowWindow(GetWindow(), SW_NORMAL);
     }
-    result->Success(flutter::EncodableMap({
-        std::make_pair(flutter::EncodableValue(kCaptionHeightKey),
-                       flutter::EncodableValue(caption_height_)),
-        std::make_pair(
-            flutter::EncodableValue(kHwndKey),
-            flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow()))),
-    }));
+    result->Success(
+        flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow())));
   } else {
     result->NotImplemented();
   }
