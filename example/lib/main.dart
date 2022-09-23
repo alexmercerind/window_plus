@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:window_plus_example/src/native.dart';
+import 'package:window_plus/window_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

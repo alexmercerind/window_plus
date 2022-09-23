@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:window_plus_example/src/common.dart';
+import 'package:window_plus/src/common.dart';
 
 class WindowPlus {
   static const WindowPlus instance = WindowPlus._();
