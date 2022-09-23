@@ -3,7 +3,7 @@ import 'package:window_plus/window_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await WindowPlus.instance.ensureInitialized();
+  await WindowPlus.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -18,19 +18,34 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('window_plus'),
-        ),
-        body: const Center(
-          child: Card(
-            elevation: 4.0,
-            child: WindowCaptionArea(
-              width: 400.0,
-              height: 200.0,
+      debugShowCheckedModeBanner: false,
+      home: LayoutBuilder(
+        builder: (context, _) {
+          return Scaffold(
+            body: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: WindowPlus.instance.captionHeight,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Expanded(
+                        child: WindowCaptionArea(),
+                      ),
+                      const WindowMinimizeButton(),
+                      WindowRestoreMaximizeButton(),
+                      const WindowCloseButton(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:win32/win32.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,21 +26,44 @@ class WindowPlus {
   WindowPlus._();
 
   /// Initializes the [WindowPlus] instance for use.
-  Future<void> ensureInitialized() async {
+  static Future<void> ensureInitialized() async {
     if (Platform.isWindows) {
-      final result = await _channel.invokeMethod(kEnsureInitializedMethodName);
-      debugPrint(result.toString());
-      captionHeight = result[kCaptionHeightKey];
-      hwnd = result[kHwndKey];
+      instance.hwnd = await _channel.invokeMethod(kEnsureInitializedMethodName);
+      debugPrint(instance.hwnd.toString());
+      debugPrint(instance.captionPadding.toString());
+      debugPrint(instance.captionHeight.toString());
+      debugPrint(instance.captionButtonSize.toString());
     }
   }
 
-  /// Height of the title bar.
-  /// If it is `0`, then it indicates that a custom title bar is not being used.
-  int captionHeight = 0;
-
   /// `HWND` of the window. Only for Windows.
   int hwnd = 0;
+
+  double get captionPadding {
+    if (Platform.isWindows) {
+      return GetSystemMetrics(SM_CXBORDER) * 1.0;
+    }
+    return 0.0;
+  }
+
+  double get captionHeight {
+    if (Platform.isWindows) {
+      final pixels = GetSystemMetrics(SM_CYCAPTION) +
+          GetSystemMetrics(SM_CYSIZEFRAME) +
+          GetSystemMetrics(SM_CXPADDEDBORDER);
+      return pixels * 1.0;
+    }
+    return 0.0;
+  }
+
+  Size get captionButtonSize {
+    if (Platform.isWindows) {
+      final dx = GetSystemMetrics(SM_CYCAPTION) * 2.0;
+      final dy = (captionHeight - GetSystemMetrics(SM_CXBORDER));
+      return Size(dx, dy);
+    }
+    return Size.zero;
+  }
 
   /// [MethodChannel] for communicating with the native side.
   static const MethodChannel _channel = MethodChannel(kMethodChannelName);
