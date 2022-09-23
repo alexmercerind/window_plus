@@ -22,7 +22,15 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('window_plus'),
         ),
-        body: const Center(),
+        body: const Center(
+          child: Card(
+            elevation: 4.0,
+            child: WindowCaptionArea(
+              width: 400.0,
+              height: 200.0,
+            ),
+          ),
+        ),
       ),
     );
   }
