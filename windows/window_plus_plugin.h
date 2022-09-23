@@ -45,6 +45,7 @@ class WindowPlusPlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
+  int32_t caption_height_ = 0;
   int64_t window_proc_delegate_id_ = 0;
 };
 

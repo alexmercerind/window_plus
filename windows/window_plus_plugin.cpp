@@ -5,9 +5,6 @@
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
-#pragma comment(lib, "dwmapi")
-#pragma comment(lib, "comctl32.lib")
-
 namespace window_plus {
 
 WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
@@ -56,6 +53,11 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
     case WM_ERASEBKGND: {
       return 1;
     }
+    // Separately handle window caption area dragging.
+    case WM_CAPTIONAREA: {
+      ::ReleaseCapture();
+      ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+    }
     case WM_NCHITTEST: {
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
       const POINT border{::GetSystemMetrics(SM_CXFRAME) +
@@ -100,13 +102,6 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
           return HTBOTTOMLEFT;
         case bottom | right:
           return HTBOTTOMRIGHT;
-      }
-      // Handle the title bar.
-      auto title_bar = GetSystemMetrics(SM_CYFRAME) +
-                       GetSystemMetrics(SM_CYCAPTION) +
-                       GetSystemMetrics(SM_CXPADDEDBORDER);
-      if (cursor.y < rect.top + title_bar) {
-        return HTCAPTION;
       }
       // The client area itself i.e. Flutter.
       return HTCLIENT;
@@ -178,7 +173,6 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
       // This means sending |HTTRANSPARENT| from the child window for the top
       // region of the window. It will cause the actual parent window to receive
       // the |WM_NCHITTEST| message and handle |HTTOP|.
-      // Also cut the section for the title-bar move area i.e. |HTCAPTION|.
       RECT rect;
       ::GetWindowRect(window, &rect);
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
@@ -186,13 +180,7 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
                              ::GetSystemMetrics(SM_CXPADDEDBORDER),
                          ::GetSystemMetrics(SM_CYFRAME) +
                              ::GetSystemMetrics(SM_CXPADDEDBORDER)};
-      auto title_bar = GetSystemMetrics(SM_CYFRAME) +
-                       GetSystemMetrics(SM_CYCAPTION) +
-                       GetSystemMetrics(SM_CXPADDEDBORDER);
-      // To allow interraction with parent HWND for |HTTOP|.
       if (cursor.y < rect.top + border.y) {
-        return HTTRANSPARENT;
-      } else if (cursor.y < rect.top + title_bar) {
         return HTTRANSPARENT;
       }
       // Actual Flutter content, keep it interactive.
@@ -207,6 +195,9 @@ void WindowPlusPlugin::HandleMethodCall(
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
     if (IsWindows10OrGreater() && window_proc_delegate_id_ == 0) {
+      // |title_bar_height_| is zero on Windows versions where a custom frame
+      // isn't used, because Flutter doesn't need to draw one itself.
+      caption_height_ = ::GetSystemMetrics(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
@@ -218,9 +209,15 @@ void WindowPlusPlugin::HandleMethodCall(
       auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
                      SWP_NOSIZE | SWP_FRAMECHANGED;
       ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
-      ::ShowWindow(GetWindow(), SW_SHOWMAXIMIZED);
+      ::ShowWindow(GetWindow(), SW_NORMAL);
     }
-    result->Success(flutter::EncodableValue(nullptr));
+    result->Success(flutter::EncodableMap({
+        std::make_pair(flutter::EncodableValue(kCaptionHeightKey),
+                       flutter::EncodableValue(caption_height_)),
+        std::make_pair(
+            flutter::EncodableValue(kHwndKey),
+            flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow()))),
+    }));
   } else {
     result->NotImplemented();
   }
