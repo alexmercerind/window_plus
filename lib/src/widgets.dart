@@ -425,3 +425,41 @@ class MouseStateBuilderState extends State<MouseStateBuilder> {
     );
   }
 }
+
+class WindowCaption extends StatefulWidget {
+  final Brightness? brightness;
+  // Force re-rendering when the window is maximized or restored.
+  // ignore: prefer_const_constructors_in_immutables
+  WindowCaption({
+    Key? key,
+    this.brightness,
+  }) : super(key: key);
+
+  @override
+  State<WindowCaption> createState() => _WindowCaptionState();
+}
+
+class _WindowCaptionState extends State<WindowCaption> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: WindowPlus.instance.captionHeight,
+      child: Theme(
+        data: Theme.of(context).copyWith(brightness: widget.brightness),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Expanded(
+              child: WindowCaptionArea(),
+            ),
+            const WindowMinimizeButton(),
+            WindowRestoreMaximizeButton(),
+            const WindowCloseButton(),
+          ],
+        ),
+      ),
+    );
+  }
+}

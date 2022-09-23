@@ -15,10 +15,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  ThemeMode theme = ThemeMode.light;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode: theme,
       home: LayoutBuilder(
         builder: (context, _) {
           return Scaffold(
@@ -26,19 +31,25 @@ class _MyAppState extends State<MyApp> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: WindowPlus.instance.captionHeight,
+                WindowCaption(),
+                Expanded(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Expanded(
-                        child: WindowCaptionArea(),
+                      IconButton(
+                        icon: Icon(
+                          theme == ThemeMode.dark
+                              ? Icons.wb_sunny
+                              : Icons.nightlight_round,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            theme = theme == ThemeMode.dark
+                                ? ThemeMode.light
+                                : ThemeMode.dark;
+                          });
+                        },
                       ),
-                      const WindowMinimizeButton(),
-                      WindowRestoreMaximizeButton(),
-                      const WindowCloseButton(),
                     ],
                   ),
                 ),
