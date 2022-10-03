@@ -1,3 +1,9 @@
+// This file is a part of window_plus
+// (https://github.com/alexmercerind/window_plus).
+//
+// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
+// All rights reserved. Use of this source code is governed by MIT license that
+// can be found in the LICENSE file.
 #ifndef FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_
 #define FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_
 
@@ -41,7 +47,11 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   RTL_OSVERSIONINFOW GetWindowsVersion();
 
-  bool IsWindows10OrGreater();
+  bool IsWindows10RTMOrGreater();
+
+  bool IsWindows10RS1OrGreater();
+
+  int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index);
 
   std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                               UINT message,

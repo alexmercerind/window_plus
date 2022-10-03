@@ -1,3 +1,9 @@
+// This file is a part of window_plus
+// (https://github.com/alexmercerind/window_plus).
+//
+// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
+// All rights reserved. Use of this source code is governed by MIT license that
+// can be found in the LICENSE file.
 #include "window_plus_plugin.h"
 
 #include <Commctrl.h>
@@ -47,9 +53,33 @@ RTL_OSVERSIONINFOW WindowPlusPlugin::GetWindowsVersion() {
   return RTL_OSVERSIONINFOW{0};
 }
 
-bool WindowPlusPlugin::IsWindows10OrGreater() {
+bool WindowPlusPlugin::IsWindows10RTMOrGreater() {
   auto version = GetWindowsVersion();
   return version.dwBuildNumber >= kWindows10RTM;
+}
+
+bool WindowPlusPlugin::IsWindows10RS1OrGreater() {
+  auto version = GetWindowsVersion();
+  return version.dwBuildNumber >= kWindows10RS1;
+}
+
+int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
+  if (IsWindows10RS1OrGreater()) {
+    auto module = ::GetModuleHandleW(L"User32.dll");
+    if (module) {
+      // Only available for Windows 10 RS1 i.e. Anniversary Update.
+      auto GetSystemMetricsForDpi = reinterpret_cast<GetSystemMetricsForDpiPtr>(
+          ::GetProcAddress(module, "GetSystemMetricsForDpi"));
+      auto GetDpiForWindow = reinterpret_cast<GetDpiForWindowPtr>(
+          ::GetProcAddress(module, "GetDpiForWindow"));
+      if (GetSystemMetricsForDpi != nullptr && GetDpiForWindow != nullptr) {
+        // DPI aware metrics.
+        return GetSystemMetricsForDpi(index, GetDpiForWindow(GetWindow()));
+      }
+    }
+  }
+  // System metrics without any DPI awareness.
+  return ::GetSystemMetrics(index);
 }
 
 std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
@@ -74,10 +104,10 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
     }
     case WM_NCHITTEST: {
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
-      const POINT border{::GetSystemMetrics(SM_CXFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER),
-                         ::GetSystemMetrics(SM_CYFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      const POINT border{GetSystemMetricsForWindow(SM_CXFRAME) +
+                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
+                         GetSystemMetricsForWindow(SM_CYFRAME) +
+                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
       RECT rect;
       ::GetWindowRect(GetWindow(), &rect);
       // Bit values to handle multiple regions at once at corners.
@@ -152,10 +182,10 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
         }
       }
       // Handle the window in restored state.
-      const POINT border{::GetSystemMetrics(SM_CXFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER),
-                         ::GetSystemMetrics(SM_CYFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      const POINT border{GetSystemMetricsForWindow(SM_CXFRAME) +
+                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
+                         GetSystemMetricsForWindow(SM_CYFRAME) +
+                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
       if (::IsZoomed(GetWindow())) {
         params->rgrc[0].top -= 1;
       } else {
@@ -181,6 +211,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
 LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
                                           WPARAM wparam, LPARAM lparam,
                                           UINT_PTR id, DWORD_PTR data) {
+  auto plugin = reinterpret_cast<WindowPlusPlugin*>(data);
   switch (message) {
     case WM_NCHITTEST: {
       // This subclass proc is only used to handle the top resize border.
@@ -190,14 +221,14 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
       RECT rect;
       ::GetWindowRect(window, &rect);
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
-      const POINT border{::GetSystemMetrics(SM_CXFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER),
-                         ::GetSystemMetrics(SM_CYFRAME) +
-                             ::GetSystemMetrics(SM_CXPADDEDBORDER)};
+      const POINT border{
+          plugin->GetSystemMetricsForWindow(SM_CXFRAME) +
+              plugin->GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
+          plugin->GetSystemMetricsForWindow(SM_CYFRAME) +
+              plugin->GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
       if (
           // No need to make room for resize border in maximized state.
-          !::IsZoomed(reinterpret_cast<HWND>(data)) &&
-          cursor.y < rect.top + border.y) {
+          !::IsZoomed(plugin->GetWindow()) && cursor.y < rect.top + border.y) {
         return HTTRANSPARENT;
       }
       // Actual Flutter content, keep it interactive.
@@ -211,17 +242,17 @@ void WindowPlusPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
-    if (IsWindows10OrGreater() && window_proc_delegate_id_ == -1) {
+    if (IsWindows10RTMOrGreater() && window_proc_delegate_id_ == -1) {
       // |title_bar_height_| is zero on Windows versions where a custom frame
       // isn't used, because Flutter doesn't need to draw one itself.
-      caption_height_ = ::GetSystemMetrics(SM_CYCAPTION);
+      caption_height_ = GetSystemMetricsForWindow(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, std::placeholders::_4));
       ::SetWindowSubclass(registrar_->GetView()->GetNativeWindow(),
                           ChildWindowProc, 1,
-                          reinterpret_cast<DWORD_PTR>(GetWindow()));
+                          reinterpret_cast<DWORD_PTR>(this));
       auto margins = MARGINS{0, 0, 0, 1};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
       auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
