@@ -29,10 +29,6 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  flutter_window_close:
-    git:
-      url: https://github.com/harmonoid/flutter_window_close.git
-      ref: 79e358db9e1edaa9dc147a7e31d73b0b3ba02cdb
 
 dev_dependencies:
   flutter_test:

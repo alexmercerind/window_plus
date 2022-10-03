@@ -10,11 +10,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  path: ^1.8.2
   win32: ^3.0.0
+  plugin_platform_interface: ^2.0.2
   safe_local_storage:
     git: https://github.com/harmonoid/safe_local_storage.git
-  plugin_platform_interface: ^2.0.2
-  path: ^1.8.2
+  flutter_window_close:
+    git:
+      url: https://github.com/harmonoid/flutter_window_close.git
+      ref: 79e358db9e1edaa9dc147a7e31d73b0b3ba02cdb
 
 dev_dependencies:
   flutter_test:

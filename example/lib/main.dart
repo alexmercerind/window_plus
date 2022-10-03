@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:window_plus/window_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterWindowClose.setWindowShouldCloseHandler(() async {
-    try {
-      await WindowPlus.instance.save();
-    } catch (exception, stacktrace) {
-      debugPrint(exception.toString());
-      debugPrint(stacktrace.toString());
-    }
+  WindowPlus.setWindowCloseHandler(() async {
+    debugPrint('[WindowPlus.setWindowCloseHandler]');
     return true;
   });
   await WindowPlus.ensureInitialized(
@@ -28,6 +22,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode theme = ThemeMode.light;
+  bool fullscreen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +55,18 @@ class _MyAppState extends State<MyApp> {
                                 ? ThemeMode.light
                                 : ThemeMode.dark;
                           });
+                        },
+                      ),
+                      const SizedBox(width: 16.0),
+                      IconButton(
+                        icon: Icon(
+                          fullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            fullscreen = !fullscreen;
+                          });
+                          WindowPlus.instance.setIsFullscreen(fullscreen);
                         },
                       ),
                     ],

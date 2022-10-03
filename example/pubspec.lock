@@ -80,7 +80,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_window_close:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "."
       ref: "79e358db9e1edaa9dc147a7e31d73b0b3ba02cdb"
