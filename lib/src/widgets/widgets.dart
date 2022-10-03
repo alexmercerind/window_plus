@@ -1,12 +1,10 @@
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 import 'package:flutter/material.dart';
 
-import 'package:window_plus/src/utils.dart';
-import 'package:window_plus/src/icons.dart';
-import 'package:window_plus/src/native.dart';
+import 'package:window_plus/src/window_plus.dart';
 import 'package:window_plus/src/common.dart';
+import 'package:window_plus/src/widgets/utils.dart';
+import 'package:window_plus/src/widgets/icons.dart';
 
 /// A widget that is used to draw the draggable area of the window i.e. title bar.
 /// Any click event on this widget will result in window being dragged by the user.
@@ -31,7 +29,7 @@ class WindowCaptionArea extends StatelessWidget {
       behavior: HitTestBehavior.translucent,
       onPanStart: (e) {
         assert(WindowPlus.instance.hwnd != 0);
-        SendMessage(
+        PostMessage(
           WindowPlus.instance.hwnd,
           WM_CAPTIONAREA,
           0,
@@ -41,14 +39,14 @@ class WindowCaptionArea extends StatelessWidget {
       onDoubleTap: () {
         assert(WindowPlus.instance.hwnd != 0);
         if (IsZoomed(WindowPlus.instance.hwnd) == 0) {
-          SendMessage(
+          PostMessage(
             WindowPlus.instance.hwnd,
             WM_SYSCOMMAND,
             SC_MAXIMIZE,
             0,
           );
         } else {
-          SendMessage(
+          PostMessage(
             WindowPlus.instance.hwnd,
             WM_SYSCOMMAND,
             SC_RESTORE,

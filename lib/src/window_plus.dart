@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:window_plus/src/common.dart';
+import 'package:window_plus/src/window_state.dart';
 
 /// The primary API to draw & handle the custom window frame.
 ///
@@ -14,30 +15,49 @@ import 'package:window_plus/src/common.dart';
 /// ```dart
 /// Future<void> main() async {
 ///   WidgetsFlutterBinding.ensureInitialized();
-///   await WindowPlus.instance.ensureInitialized();
+///   await WindowPlus.ensureInitialized(
+///     application: 'com.alexmercerind.window_plus',
+///   );
 ///   runApp(const MyApp());
 /// }
 /// ```
 ///
-class WindowPlus {
+class WindowPlus extends WindowState {
   /// Globally accessible singleton [instance] of [WindowPlus].
-  static final WindowPlus instance = WindowPlus._();
-
-  WindowPlus._();
-
-  /// Initializes the [WindowPlus] instance for use.
-  static Future<void> ensureInitialized() async {
-    if (Platform.isWindows) {
-      instance.hwnd = await _channel.invokeMethod(kEnsureInitializedMethodName);
-      debugPrint(instance.hwnd.toString());
-      debugPrint(instance.captionPadding.toString());
-      debugPrint(instance.captionHeight.toString());
-      debugPrint(instance.captionButtonSize.toString());
+  static WindowPlus get instance {
+    if (_instance == null) {
+      assert(
+        false,
+        '[WindowPlus.instance] is not initialized. Call [WindowPlus.ensureInitialized] before accessing the singleton [instance].',
+      );
     }
+    return _instance!;
   }
 
-  /// `HWND` of the window. Only for Windows.
-  int hwnd = 0;
+  static WindowPlus? _instance;
+
+  WindowPlus._({
+    required String application,
+  }) : super(application: application);
+
+  /// Initializes the [WindowPlus] instance for use.
+  ///
+  /// Pass an [application] name to uniquely identify the application.
+  /// This is used to save & restore the window state at a well-defined location.
+  ///
+  static Future<void> ensureInitialized({
+    required String application,
+  }) async {
+    if (Platform.isWindows) {
+      _instance = WindowPlus._(application: application);
+      _instance?.hwnd =
+          await _channel.invokeMethod(kEnsureInitializedMethodName);
+      debugPrint(_instance?.hwnd.toString());
+      debugPrint(_instance?.captionPadding.toString());
+      debugPrint(_instance?.captionHeight.toString());
+      debugPrint(_instance?.captionButtonSize.toString());
+    }
+  }
 
   double get captionPadding {
     if (Platform.isWindows) {
