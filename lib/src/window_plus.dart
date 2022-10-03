@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:win32/win32.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_state.dart';
+import 'package:window_plus/src/utils/windows_info.dart';
 
 /// The primary API to draw & handle the custom window frame.
 ///
@@ -65,28 +67,53 @@ class WindowPlus extends WindowState {
 
   double get captionPadding {
     if (Platform.isWindows) {
-      return GetSystemMetrics(SM_CXBORDER) * 1.0;
+      return getSystemMetrics(SM_CXBORDER);
     }
     return 0.0;
   }
 
   double get captionHeight {
     if (Platform.isWindows) {
-      final pixels = GetSystemMetrics(SM_CYCAPTION) +
-          GetSystemMetrics(SM_CYSIZEFRAME) +
-          GetSystemMetrics(SM_CXPADDEDBORDER);
-      return pixels * 1.0;
+      return getSystemMetrics(SM_CYCAPTION) +
+          getSystemMetrics(SM_CYSIZEFRAME) +
+          getSystemMetrics(SM_CXPADDEDBORDER);
     }
     return 0.0;
   }
 
   Size get captionButtonSize {
     if (Platform.isWindows) {
-      final dx = GetSystemMetrics(SM_CYCAPTION) * 2.0;
-      final dy = (captionHeight - GetSystemMetrics(SM_CXBORDER));
+      final dx = getSystemMetrics(SM_CYCAPTION) * 2;
+      final dy = captionHeight - captionPadding;
       return Size(dx, dy);
     }
     return Size.zero;
+  }
+
+  double getSystemMetrics(int index) {
+    if (Platform.isWindows) {
+      try {
+        // Use DPI aware API [GetSystemMetricsForDpi] on Windows 10 1607+.
+        if (WindowsInfo.instance.isWindows10RS1OrGreater) {
+          return GetSystemMetricsForDpi(
+                index,
+                GetDpiForWindow(hwnd),
+              ) /
+              window.devicePixelRatio;
+        }
+        // Non DPI aware API [GetSystemMetrics] on older Windows versions.
+        else {
+          return GetSystemMetrics(index) / window.devicePixelRatio;
+        }
+      } catch (exception, stacktrace) {
+        // Fallback.
+        debugPrint(exception.toString());
+        debugPrint(stacktrace.toString());
+        return GetSystemMetrics(index) / window.devicePixelRatio;
+      }
+    }
+    // Non Windows platforms.
+    return 0.0;
   }
 
   /// [MethodChannel] for communicating with the native side.

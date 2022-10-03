@@ -1,8 +1,9 @@
+import 'dart:io';
 import 'package:win32/win32.dart';
 import 'package:flutter/material.dart';
 
-import 'package:window_plus/src/window_plus.dart';
 import 'package:window_plus/src/common.dart';
+import 'package:window_plus/src/window_plus.dart';
 import 'package:window_plus/src/widgets/utils.dart';
 import 'package:window_plus/src/widgets/icons.dart';
 
@@ -16,7 +17,9 @@ class WindowCaptionArea extends StatelessWidget {
   final double? width;
   final double? height;
 
-  const WindowCaptionArea({
+  // Force re-rendering when the window DPI is changed.
+  // ignore: prefer_const_constructors_in_immutables
+  WindowCaptionArea({
     Key? key,
     this.child,
     this.width,
@@ -72,7 +75,9 @@ class WindowButton extends StatelessWidget {
   final EdgeInsets? padding;
   final VoidCallback? onPressed;
 
-  const WindowButton({
+  // Force re-rendering when the window DPI is changed.
+  // ignore: prefer_const_constructors_in_immutables
+  WindowButton({
     Key? key,
     required this.colors,
     this.builder,
@@ -110,9 +115,13 @@ class WindowButton extends StatelessWidget {
             (WindowPlus.instance.captionHeight - borderSize) / 3 -
                 (borderSize / 2);
         final fadeOutColor =
-            getBackgroundColor(MouseState()..isMouseOver = true).withOpacity(0);
+            getBackgroundColor(MouseState()..isMouseOver = true)
+                .withOpacity(0.0);
         final padding = this.padding ?? EdgeInsets.all(defaultPadding);
-        final child = Padding(padding: padding, child: icon);
+        final child = Padding(
+          padding: padding,
+          child: icon,
+        );
         return AnimatedContainer(
           curve: Curves.easeOut,
           duration: Duration(
@@ -135,7 +144,9 @@ class WindowMinimizeButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool animate;
 
-  const WindowMinimizeButton({
+  // Force re-rendering when the window DPI is changed.
+  // ignore: prefer_const_constructors_in_immutables
+  WindowMinimizeButton({
     Key? key,
     this.colors,
     this.onPressed,
@@ -294,7 +305,9 @@ class WindowCloseButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool animate;
 
-  const WindowCloseButton({
+  // Force re-rendering when the window DPI is changed.
+  // ignore: prefer_const_constructors_in_immutables
+  WindowCloseButton({
     Key? key,
     this.colors,
     this.onPressed,
@@ -440,24 +453,26 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: WindowPlus.instance.captionHeight,
-      child: Theme(
-        data: Theme.of(context).copyWith(brightness: widget.brightness),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Expanded(
-              child: WindowCaptionArea(),
+    return Platform.isWindows
+        ? SizedBox(
+            width: double.infinity,
+            height: WindowPlus.instance.captionHeight,
+            child: Theme(
+              data: Theme.of(context).copyWith(brightness: widget.brightness),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: WindowCaptionArea(),
+                  ),
+                  WindowMinimizeButton(),
+                  WindowRestoreMaximizeButton(),
+                  WindowCloseButton(),
+                ],
+              ),
             ),
-            const WindowMinimizeButton(),
-            WindowRestoreMaximizeButton(),
-            const WindowCloseButton(),
-          ],
-        ),
-      ),
-    );
+          )
+        : const SizedBox.shrink();
   }
 }
