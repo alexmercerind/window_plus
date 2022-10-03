@@ -1,12 +1,18 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:ffi' hide Size;
+import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:window_plus/src/common.dart';
+import 'package:window_plus/src/models/saved_window_state.dart';
 import 'package:window_plus/src/window_state.dart';
 import 'package:window_plus/src/utils/windows_info.dart';
+
+/// I refactored a lot of `package:flutter_window_close` & now it is in really good shape, so using existing implementation.
+import 'package:flutter_window_close/flutter_window_close.dart';
 
 /// The primary API to draw & handle the custom window frame.
 ///
@@ -50,6 +56,19 @@ class WindowPlus extends WindowState {
   static Future<void> ensureInitialized({
     required String application,
   }) async {
+    FlutterWindowClose.setWindowShouldCloseHandler(
+      () async {
+        // Save the window state before closing the window.
+        try {
+          await WindowPlus.instance.save();
+        } catch (exception, stacktrace) {
+          debugPrint(exception.toString());
+          debugPrint(stacktrace.toString());
+        }
+        // Call the public handler.
+        return _windowCloseHandler?.call() ?? Future.value(true);
+      },
+    );
     if (Platform.isWindows) {
       _instance = WindowPlus._(application: application);
       // Make the window visible based on saved state.
@@ -64,6 +83,164 @@ class WindowPlus extends WindowState {
       debugPrint(_instance?.captionButtonSize.toString());
     }
   }
+
+  /// This method must be called before [ensureInitialized].
+  ///
+  /// Sets a function to handle window close events.
+  /// This may be used to intercept the close event and perform some actions before closing the window
+  /// or prevent window from being closed completely.
+  ///
+  /// e.g.
+  ///
+  /// ```dart
+  /// Future<void> main() async {
+  ///   WidgetsFlutterBinding.ensureInitialized();
+  ///   WindowPlus.setWindowShouldCloseHandler(
+  ///     () async {
+  ///       if (isSomeOperationInProgress) {
+  ///         return false;
+  ///       }
+  ///       return true;
+  ///     },
+  ///   );
+  ///   WindowPlus.ensureInitialized(
+  ///     application: 'com.alexmercerind.window_plus',
+  ///   );
+  /// }
+  /// ```
+  ///
+  /// When a user click on the close button on a window, the plug-in redirects
+  /// the event to your function. The function should return a future that
+  /// returns a boolean to tell the plug-in whether the user really wants to
+  /// close the window or not. True will let the window to be closed, while
+  /// false let the window to remain open.
+  ///
+  /// By default there is no handler, and the window will be directly closed
+  /// when a window close event happens. You can also reset the handler by
+  /// passing null to the method.
+  ///
+  static void setWindowCloseHandler(
+    Future<bool> Function()? windowCloseHandler,
+  ) {
+    assert(
+      _windowCloseHandler == null,
+      '[WindowPlus.setWindowCloseHandler] is already set.',
+    );
+    _windowCloseHandler = windowCloseHandler;
+  }
+
+  /// Enables or disables the fullscreen mode.
+  ///
+  /// If [enabled] is `true`, the window will be made fullscreen.
+  /// Once [enabled] is passed as `false` in future, window will be restored back to it's prior state i.e. maximized or restored at same position & size.
+  ///
+  Future<void> setIsFullscreen(bool enabled) async {
+    // The primary idea here is to revolve around |WS_OVERLAPPEDWINDOW| & detect/set fullscreen based on it.
+    // On the native plugin side implementation, this is separately handled.
+    // If there is no |WS_OVERLAPPEDWINDOW| style on the window i.e. in fullscreen, then no area is left for
+    // |WM_NCHITTEST|, accordingly client area is also expanded to fill whole monitor using |WM_NCCALCSIZE|.
+    if (Platform.isWindows) {
+      int style = GetWindowLongPtr(hwnd, GWL_STYLE);
+      // If the window has |WS_OVERLAPPEDWINDOW| style, it is not fullscreen.
+      if (enabled && style & WS_OVERLAPPEDWINDOW > 0) {
+        final placement = calloc<WINDOWPLACEMENT>();
+        final monitor = calloc<MONITORINFO>();
+        placement.ref.length = sizeOf<WINDOWPLACEMENT>();
+        monitor.ref.cbSize = sizeOf<MONITORINFO>();
+        GetWindowPlacement(hwnd, placement);
+        // Save current window position & size as class attribute.
+        _savedWindowStateBeforeFullscreen = SavedWindowState(
+          placement.ref.rcNormalPosition.left,
+          placement.ref.rcNormalPosition.top,
+          placement.ref.rcNormalPosition.right -
+              placement.ref.rcNormalPosition.left,
+          placement.ref.rcNormalPosition.bottom -
+              placement.ref.rcNormalPosition.top,
+          IsZoomed(hwnd) == 1,
+        );
+        GetMonitorInfo(
+          MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+          monitor,
+        );
+        SetWindowLongPtr(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+        SetWindowPos(
+          hwnd,
+          HWND_TOP,
+          monitor.ref.rcMonitor.left,
+          monitor.ref.rcMonitor.top,
+          monitor.ref.rcMonitor.right - monitor.ref.rcMonitor.left,
+          monitor.ref.rcMonitor.bottom - monitor.ref.rcMonitor.top,
+          SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+        );
+        calloc.free(placement);
+        calloc.free(monitor);
+      }
+      // Restore to original state.
+      else if (!enabled) {
+        SetWindowLongPtr(hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+        // Leave as it is, if the window was maximized before fullscreen.
+        if (IsZoomed(hwnd) == 0) {
+          SetWindowPos(
+            hwnd,
+            NULL,
+            _savedWindowStateBeforeFullscreen.x,
+            _savedWindowStateBeforeFullscreen.y,
+            _savedWindowStateBeforeFullscreen.width,
+            _savedWindowStateBeforeFullscreen.height,
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+          );
+        } else {
+          // Refresh the parent [hwnd].
+          SetWindowPos(
+            hwnd,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE |
+                SWP_NOSIZE |
+                SWP_NOZORDER |
+                SWP_NOOWNERZORDER |
+                SWP_FRAMECHANGED,
+          );
+          // Correctly resize & position the child Flutter view [HWND].
+          final rect = calloc<RECT>();
+          final flutterWindowClassName = 'FLUTTERVIEW'.toNativeUtf16();
+          final flutterWindowHWND =
+              FindWindowEx(hwnd, 0, flutterWindowClassName, nullptr);
+          GetClientRect(hwnd, rect);
+          SetWindowPos(
+            flutterWindowHWND,
+            NULL,
+            rect.ref.left,
+            rect.ref.top,
+            rect.ref.right - rect.ref.left,
+            rect.ref.bottom - rect.ref.top,
+            SWP_FRAMECHANGED,
+          );
+          calloc.free(flutterWindowClassName);
+          calloc.free(rect);
+        }
+      }
+    }
+    // TODO: Missing implementation.
+    return Future.value(null);
+  }
+
+  /// Closes the current window rendering the Flutter view.
+  ///
+  /// This method respects the callback set by [setWindowCloseHandler] & saves window state before exit.
+  ///
+  /// If the set callback returns `false`, the window will not be closed.
+  ///
+  void closeWindow() => FlutterWindowClose.closeWindow();
+
+  /// Destroys the current window rendering the Flutter view.
+  ///
+  /// This method does not respect the callback set by [setWindowCloseHandler] & does not save window state before exit.
+  ///
+  void destroyWindow() => FlutterWindowClose.destroyWindow();
 
   double get captionPadding {
     if (Platform.isWindows) {
@@ -116,6 +293,16 @@ class WindowPlus extends WindowState {
     return 0.0;
   }
 
+  /// Only used on Windows.
+  /// Window [Rect] before entering fullscreen.
+  SavedWindowState _savedWindowStateBeforeFullscreen =
+      const SavedWindowState(0, 0, 0, 0, false);
+
   /// [MethodChannel] for communicating with the native side.
   static const MethodChannel _channel = MethodChannel(kMethodChannelName);
+
+  /// The method which gets called when the window close event happens.
+  /// This may be used to intercept the event and prevent the window from closing.
+  ///
+  static Future<bool> Function()? _windowCloseHandler;
 }
