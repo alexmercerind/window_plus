@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:window_plus/window_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await WindowPlus.ensureInitialized();
+  FlutterWindowClose.setWindowShouldCloseHandler(() async {
+    try {
+      await WindowPlus.instance.save();
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
+    }
+    return true;
+  });
+  await WindowPlus.ensureInitialized(
+    application: 'com.alexmercerind.window_plus',
+  );
   runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();

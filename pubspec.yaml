@@ -1,7 +1,7 @@
 name: window_plus
 description: A must-have extension for your Flutter desktop application. Adds a custom frame, saves/restores position & more.
 version: 0.0.1
-homepage:
+publish_to: none
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
@@ -10,8 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
   win32: ^3.0.0
+  safe_local_storage:
+    git: https://github.com/harmonoid/safe_local_storage.git
+  plugin_platform_interface: ^2.0.2
+  path: ^1.8.2
 
 dev_dependencies:
   flutter_test:
