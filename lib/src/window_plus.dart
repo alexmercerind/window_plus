@@ -50,8 +50,12 @@ class WindowPlus extends WindowState {
   }) async {
     if (Platform.isWindows) {
       _instance = WindowPlus._(application: application);
-      _instance?.hwnd =
-          await _channel.invokeMethod(kEnsureInitializedMethodName);
+      // Make the window visible based on saved state.
+      final savedWindowState = await _instance?.savedWindowState;
+      _instance?.hwnd = await _channel.invokeMethod(
+        kEnsureInitializedMethodName,
+        savedWindowState?.toJson(),
+      );
       debugPrint(_instance?.hwnd.toString());
       debugPrint(_instance?.captionPadding.toString());
       debugPrint(_instance?.captionHeight.toString());

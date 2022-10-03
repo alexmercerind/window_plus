@@ -51,19 +51,25 @@ class WindowState {
   Future<void> save() async {
     if (Platform.isWindows) {
       assert(hwnd != 0);
-      final rect = calloc<RECT>();
-      final zoomed = IsZoomed(hwnd) == 1;
-      GetWindowRect(hwnd, rect);
-      final result = SavedWindowState(
-        rect.ref.left,
-        rect.ref.top,
-        rect.ref.right - rect.ref.left,
-        rect.ref.bottom - rect.ref.top,
-        zoomed,
-      );
-      calloc.free(rect);
-      await storage?.write(result.toJson());
-      debugPrint(result.toString());
+      // Only save the window state if the window is not minimized.
+      if (IsIconic(hwnd) == 0) {
+        final maximized = IsZoomed(hwnd) == 1;
+        final placement = calloc<WINDOWPLACEMENT>();
+        placement.ref.length = sizeOf<WINDOWPLACEMENT>();
+        GetWindowPlacement(hwnd, placement);
+        final result = SavedWindowState(
+          placement.ref.rcNormalPosition.left,
+          placement.ref.rcNormalPosition.top,
+          placement.ref.rcNormalPosition.right -
+              placement.ref.rcNormalPosition.left,
+          placement.ref.rcNormalPosition.bottom -
+              placement.ref.rcNormalPosition.top,
+          maximized,
+        );
+        calloc.free(placement);
+        await storage?.write(result.toJson());
+        debugPrint(result.toString());
+      }
     } else {
       // TODO: Missing implementation.
       throw MissingPluginException(
@@ -81,14 +87,14 @@ class WindowState {
           'AppData',
           'Roaming',
           application,
-          'window_state.json',
+          'WindowState.JSON',
         );
       case 'linux':
         return join(
           Platform.environment['HOME']!,
           '.config',
           application,
-          'window_state.json',
+          'WindowState.JSON',
         );
       default:
         throw Exception(
