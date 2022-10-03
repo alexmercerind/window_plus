@@ -34,8 +34,10 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   bool IsWindows10OrGreater();
 
-  std::optional<HRESULT> WindowProcDelegate(HWND hwnd, UINT message,
-                                            WPARAM wparam, LPARAM lparam);
+  std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
+                                                              UINT message,
+                                                              WPARAM wparam,
+                                                              LPARAM lparam);
 
   static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
                                  LPARAM lparam, UINT_PTR id, DWORD_PTR data);
@@ -46,7 +48,7 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
   int32_t caption_height_ = 0;
-  int64_t window_proc_delegate_id_ = 0;
+  int64_t window_proc_delegate_id_ = -1;
 };
 
 }  // namespace window_plus

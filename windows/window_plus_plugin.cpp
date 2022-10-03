@@ -5,12 +5,19 @@
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
+#include "include/window_plus/window_plus_plugin_c_api.h"
+
 namespace window_plus {
 
 WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
     : registrar_(registrar) {}
 
-WindowPlusPlugin::~WindowPlusPlugin() {}
+WindowPlusPlugin::~WindowPlusPlugin() {
+  if (window_proc_delegate_id_ != -1) {
+    registrar_->UnregisterTopLevelWindowProcDelegate(
+        static_cast<int32_t>(window_proc_delegate_id_));
+  }
+}
 
 HWND WindowPlusPlugin::GetWindow() {
   return ::GetAncestor(registrar_->GetView()->GetNativeWindow(), GA_ROOT);
@@ -45,7 +52,7 @@ bool WindowPlusPlugin::IsWindows10OrGreater() {
   return version.dwBuildNumber >= kWindows10RTM;
 }
 
-std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND hwnd,
+std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                             UINT message,
                                                             WPARAM wparam,
                                                             LPARAM lparam) {
@@ -197,7 +204,7 @@ void WindowPlusPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
-    if (IsWindows10OrGreater() && window_proc_delegate_id_ == 0) {
+    if (IsWindows10OrGreater() && window_proc_delegate_id_ == -1) {
       // |title_bar_height_| is zero on Windows versions where a custom frame
       // isn't used, because Flutter doesn't need to draw one itself.
       caption_height_ = ::GetSystemMetrics(SM_CYCAPTION);
@@ -228,9 +235,7 @@ void WindowPlusPlugin::RegisterWithRegistrar(
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           registrar->messenger(), kMethodChannelName,
           &flutter::StandardMethodCodec::GetInstance());
-
   auto plugin = std::make_unique<WindowPlusPlugin>(registrar);
-
   channel->SetMethodCallHandler(
       [plugin_pointer = plugin.get()](const auto& call, auto result) {
         plugin_pointer->HandleMethodCall(call, std::move(result));

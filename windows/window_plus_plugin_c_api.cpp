@@ -1,7 +1,5 @@
 #include "include/window_plus/window_plus_plugin_c_api.h"
 
-#include <flutter/plugin_registrar_windows.h>
-
 #include "window_plus_plugin.h"
 
 void WindowPlusPluginCApiRegisterWithRegistrar(
