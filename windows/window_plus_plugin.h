@@ -29,6 +29,11 @@ class WindowPlusPlugin : public flutter::Plugin {
   static constexpr auto kMonitorSafeArea = 36;
   static constexpr auto kWindowDefaultWidth = 1024;
   static constexpr auto kWindowDefaultHeight = 640;
+  // TODO (@alexmercerind): Expose in public API.
+  // Currently handling |WM_GETMINMAXINFO| as per Harmonoid's requirements.
+  // See: https://github.com/harmonoid/harmonoid.
+  static constexpr auto kWindowDefaultMinimumWidth = 960;
+  static constexpr auto kWindowDefaultMinimumHeight = 640;
 
   HWND GetWindow();
 
@@ -53,6 +58,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
   int32_t caption_height_ = 0;
   int64_t window_proc_delegate_id_ = -1;
+  int32_t minimum_width_ = kWindowDefaultMinimumWidth;
+  int32_t minimum_height_ = kWindowDefaultMinimumHeight;
 };
 
 }  // namespace window_plus

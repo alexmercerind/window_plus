@@ -57,6 +57,13 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                             WPARAM wparam,
                                                             LPARAM lparam) {
   switch (message) {
+    case WM_GETMINMAXINFO: {
+      auto info = (LPMINMAXINFO)lparam;
+      if (minimum_width_ != -1 && minimum_height_ != -1) {
+        info->ptMinTrackSize.x = minimum_width_;
+        info->ptMinTrackSize.y = minimum_height_;
+      }
+    }
     case WM_ERASEBKGND: {
       return 1;
     }
