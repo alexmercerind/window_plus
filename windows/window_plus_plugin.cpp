@@ -220,7 +220,70 @@ void WindowPlusPlugin::HandleMethodCall(
       auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE |
                      SWP_NOSIZE | SWP_FRAMECHANGED;
       ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
-      ::ShowWindow(GetWindow(), SW_NORMAL);
+      try {
+        if (auto saved_window_state =
+                std::get_if<flutter::EncodableMap>(method_call.arguments())) {
+          auto data = *saved_window_state;
+          auto x = std::get<int32_t>(data[flutter::EncodableValue("x")]);
+          auto y = std::get<int32_t>(data[flutter::EncodableValue("y")]);
+          auto width =
+              std::get<int32_t>(data[flutter::EncodableValue("width")]);
+          auto height =
+              std::get<int32_t>(data[flutter::EncodableValue("height")]);
+          auto maximized =
+              std::get<bool>(data[flutter::EncodableValue("maximized")]);
+          // Get the |monitor| |RECT|.
+          auto monitor = GetMonitorRect();
+          POINT point;
+          point.x = x;
+          point.y = y;
+          auto dpi = FlutterDesktopGetDpiForMonitor(
+              ::MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST));
+          double scale_factor = dpi / 96.0;
+          monitor.left += static_cast<LONG>(kMonitorSafeArea * scale_factor);
+          monitor.top += static_cast<LONG>(kMonitorSafeArea * scale_factor);
+          monitor.right -= static_cast<LONG>(kMonitorSafeArea * scale_factor);
+          monitor.bottom -= static_cast<LONG>(kMonitorSafeArea * scale_factor);
+          // If the window is within the |monitor| |RECT|, then restore it to
+          // that
+          // position. Otherwise, restore it to the center of the |monitor|.
+          if (x >= monitor.left && x <= monitor.right && y >= monitor.top &&
+              y <= monitor.bottom) {
+            ::SetWindowPos(GetWindow(), nullptr, x, y, width, height, 0);
+          } else {
+            ::SetWindowPos(
+                GetWindow(), nullptr,
+                monitor.left + (monitor.right - monitor.left) / 2 - width / 2,
+                monitor.top + (monitor.bottom - monitor.top) / 2 - height / 2,
+                width, height, 0);
+          }
+          ::ShowWindow(GetWindow(),
+                       maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+        } else {
+          // No saved window state, so restore the window to the center of the
+          // |monitor|.
+          auto monitor = GetMonitorRect();
+          ::SetWindowPos(GetWindow(), nullptr,
+                         monitor.left + (monitor.right - monitor.left) / 2 -
+                             kWindowDefaultWidth / 2,
+                         monitor.top + (monitor.bottom - monitor.top) / 2 -
+                             kWindowDefaultHeight / 2,
+                         kWindowDefaultWidth, kWindowDefaultHeight, 0);
+          ::ShowWindow(GetWindow(), SW_NORMAL);
+        }
+      } catch (...) {
+        // Typically, an instance of |std::bad_variant_access| will be received.
+        // No saved window state, so restore the window to the center of the
+        // |monitor|.
+        auto monitor = GetMonitorRect();
+        ::SetWindowPos(GetWindow(), nullptr,
+                       monitor.left + (monitor.right - monitor.left) / 2 -
+                           kWindowDefaultWidth / 2,
+                       monitor.top + (monitor.bottom - monitor.top) / 2 -
+                           kWindowDefaultHeight / 2,
+                       kWindowDefaultWidth, kWindowDefaultHeight, 0);
+        ::ShowWindow(GetWindow(), SW_NORMAL);
+      }
     }
     result->Success(
         flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow())));
