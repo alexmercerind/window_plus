@@ -51,6 +51,8 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   bool IsWindows10RS1OrGreater();
 
+  bool IsFullscreen();
+
   int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index);
 
   std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,

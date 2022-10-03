@@ -63,6 +63,12 @@ bool WindowPlusPlugin::IsWindows10RS1OrGreater() {
   return version.dwBuildNumber >= kWindows10RS1;
 }
 
+bool WindowPlusPlugin::IsFullscreen() {
+  // The fullscreen mode is implemented by removing |WS_OVERLAPPEDWINDOW| style.
+  // So, if the window has |WS_OVERLAPPEDWINDOW| style, it is not in fullscreen.
+  return !(::GetWindowLongPtr(GetWindow(), GWL_STYLE) & WS_OVERLAPPEDWINDOW);
+}
+
 int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
   if (IsWindows10RS1OrGreater()) {
     auto module = ::GetModuleHandleW(L"User32.dll");
@@ -103,6 +109,11 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
     }
     case WM_NCHITTEST: {
+      // Window only has client area in fullscreen.
+      // No need for resize or caption area hit-testing.
+      if (IsFullscreen()) {
+        return HTCLIENT;
+      }
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
       const POINT border{GetSystemMetricsForWindow(SM_CXFRAME) +
                              GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
@@ -198,9 +209,14 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
         // reduced.
         // The thing to note here is that the top border is not reduced.
         // This is because we want to keep the top resize border.
-        params->rgrc[0].bottom -= border.y;
-        params->rgrc[0].left += border.x;
-        params->rgrc[0].right -= border.x;
+        //
+        // Only reduce the client area for |WM_NCHHITTEST| handling if the
+        // window is not fullscreen.
+        if (!IsFullscreen()) {
+          params->rgrc[0].bottom -= border.y;
+          params->rgrc[0].left += border.x;
+          params->rgrc[0].right -= border.x;
+        }
       }
       return 0;
     }
@@ -227,8 +243,10 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
           plugin->GetSystemMetricsForWindow(SM_CYFRAME) +
               plugin->GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
       if (
-          // No need to make room for resize border in maximized state.
-          !::IsZoomed(plugin->GetWindow()) && cursor.y < rect.top + border.y) {
+          // No need to make room for resize border in maximized state or
+          // fullscreen state.
+          !::IsZoomed(plugin->GetWindow()) && !plugin->IsFullscreen() &&
+          cursor.y < rect.top + border.y) {
         return HTTRANSPARENT;
       }
       // Actual Flutter content, keep it interactive.
