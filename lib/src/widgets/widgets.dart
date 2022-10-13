@@ -1,4 +1,9 @@
-import 'dart:io';
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
+//
+// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
+//
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
+
 import 'package:win32/win32.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +11,7 @@ import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_plus.dart';
 import 'package:window_plus/src/widgets/utils.dart';
 import 'package:window_plus/src/widgets/icons.dart';
+import 'package:window_plus/src/utils/windows_info.dart';
 
 /// A widget that is used to draw the draggable area of the window i.e. title bar.
 /// Any click event on this widget will result in window being dragged by the user.
@@ -31,7 +37,7 @@ class WindowCaptionArea extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onPanStart: (e) {
-        assert(WindowPlus.instance.hwnd != 0);
+        assert(WindowPlus.instance.hwnd > 0);
         PostMessage(
           WindowPlus.instance.hwnd,
           WM_CAPTIONAREA,
@@ -40,21 +46,11 @@ class WindowCaptionArea extends StatelessWidget {
         );
       },
       onDoubleTap: () {
-        assert(WindowPlus.instance.hwnd != 0);
-        if (IsZoomed(WindowPlus.instance.hwnd) == 0) {
-          PostMessage(
-            WindowPlus.instance.hwnd,
-            WM_SYSCOMMAND,
-            SC_MAXIMIZE,
-            0,
-          );
+        assert(WindowPlus.instance.hwnd > 0);
+        if (WindowPlus.instance.maximized) {
+          WindowPlus.instance.restore();
         } else {
-          PostMessage(
-            WindowPlus.instance.hwnd,
-            WM_SYSCOMMAND,
-            SC_RESTORE,
-            0,
-          );
+          WindowPlus.instance.maximize();
         }
       },
       child: Container(
@@ -181,15 +177,7 @@ class WindowMinimizeButton extends StatelessWidget {
       iconBuilder: (buttonContext) => MinimizeIcon(
         color: buttonContext.iconColor,
       ),
-      onPressed: onPressed ??
-          () {
-            PostMessage(
-              WindowPlus.instance.hwnd,
-              WM_SYSCOMMAND,
-              SC_MINIMIZE,
-              0,
-            );
-          },
+      onPressed: onPressed ?? WindowPlus.instance.minimize,
     );
   }
 }
@@ -234,15 +222,7 @@ class WindowMaximizeButton extends StatelessWidget {
       iconBuilder: (buttonContext) => MaximizeIcon(
         color: buttonContext.iconColor,
       ),
-      onPressed: onPressed ??
-          () {
-            PostMessage(
-              WindowPlus.instance.hwnd,
-              WM_SYSCOMMAND,
-              SC_MAXIMIZE,
-              0,
-            );
-          },
+      onPressed: onPressed ?? WindowPlus.instance.maximize,
     );
   }
 }
@@ -287,15 +267,7 @@ class WindowRestoreButton extends StatelessWidget {
       iconBuilder: (buttonContext) => RestoreIcon(
         color: buttonContext.iconColor,
       ),
-      onPressed: onPressed ??
-          () {
-            PostMessage(
-              WindowPlus.instance.hwnd,
-              WM_SYSCOMMAND,
-              SC_RESTORE,
-              0,
-            );
-          },
+      onPressed: onPressed ?? WindowPlus.instance.restore,
     );
   }
 }
@@ -334,15 +306,7 @@ class WindowCloseButton extends StatelessWidget {
       iconBuilder: (buttonContext) => CloseIcon(
         color: buttonContext.iconColor,
       ),
-      onPressed: onPressed ??
-          () {
-            PostMessage(
-              WindowPlus.instance.hwnd,
-              WM_SYSCOMMAND,
-              SC_CLOSE,
-              0,
-            );
-          },
+      onPressed: onPressed ?? WindowPlus.instance.close,
     );
   }
 }
@@ -453,7 +417,7 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
-    return Platform.isWindows
+    return WindowsInfo.instance.isWindows10RS1OrGreater
         ? SizedBox(
             width: double.infinity,
             height: WindowPlus.instance.captionHeight,

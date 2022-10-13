@@ -1,5 +1,12 @@
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
+//
+// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
+//
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
+
 import 'dart:io';
 import 'dart:ui';
+import 'dart:async';
 import 'dart:ffi' hide Size;
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
@@ -140,7 +147,7 @@ class WindowPlus extends WindowState {
     // If there is no |WS_OVERLAPPEDWINDOW| style on the window i.e. in fullscreen, then no area is left for
     // |WM_NCHITTEST|, accordingly client area is also expanded to fill whole monitor using |WM_NCCALCSIZE|.
     if (Platform.isWindows) {
-      int style = GetWindowLongPtr(hwnd, GWL_STYLE);
+      final style = GetWindowLongPtr(hwnd, GWL_STYLE);
       // If the window has |WS_OVERLAPPEDWINDOW| style, it is not fullscreen.
       if (enabled && style & WS_OVERLAPPEDWINDOW > 0) {
         final placement = calloc<WINDOWPLACEMENT>();
@@ -174,6 +181,42 @@ class WindowPlus extends WindowState {
         );
         calloc.free(placement);
         calloc.free(monitor);
+        // Refresh the parent [hwnd].
+        SetWindowPos(
+          hwnd,
+          NULL,
+          0,
+          0,
+          0,
+          0,
+          SWP_NOMOVE |
+              SWP_NOSIZE |
+              SWP_NOZORDER |
+              SWP_NOOWNERZORDER |
+              SWP_FRAMECHANGED,
+        );
+        // Correctly resize & position the child Flutter view [HWND].
+        final rect = calloc<RECT>();
+        final flutterWindowClassName =
+            kWin32FlutterViewWindowClass.toNativeUtf16();
+        final flutterWindowHWND = FindWindowEx(
+          hwnd,
+          0,
+          flutterWindowClassName,
+          nullptr,
+        );
+        GetClientRect(hwnd, rect);
+        SetWindowPos(
+          flutterWindowHWND,
+          NULL,
+          rect.ref.left,
+          rect.ref.top,
+          rect.ref.right - rect.ref.left,
+          rect.ref.bottom - rect.ref.top,
+          SWP_FRAMECHANGED,
+        );
+        calloc.free(flutterWindowClassName);
+        calloc.free(rect);
       }
       // Restore to original state.
       else if (!enabled) {
@@ -206,9 +249,14 @@ class WindowPlus extends WindowState {
           );
           // Correctly resize & position the child Flutter view [HWND].
           final rect = calloc<RECT>();
-          final flutterWindowClassName = 'FLUTTERVIEW'.toNativeUtf16();
-          final flutterWindowHWND =
-              FindWindowEx(hwnd, 0, flutterWindowClassName, nullptr);
+          final flutterWindowClassName =
+              kWin32FlutterViewWindowClass.toNativeUtf16();
+          final flutterWindowHWND = FindWindowEx(
+            hwnd,
+            0,
+            flutterWindowClassName,
+            nullptr,
+          );
           GetClientRect(hwnd, rect);
           SetWindowPos(
             flutterWindowHWND,
@@ -228,29 +276,68 @@ class WindowPlus extends WindowState {
     return Future.value(null);
   }
 
-  /// Closes the current window rendering the Flutter view.
+  /// Maximizes the window holding Flutter view.
+  FutureOr<void> maximize() {
+    if (Platform.isWindows) {
+      PostMessage(
+        hwnd,
+        WM_SYSCOMMAND,
+        SC_MAXIMIZE,
+        0,
+      );
+    }
+    // TODO: Missing implementation.
+  }
+
+  /// Restores the window holding Flutter view.
+  FutureOr<void> restore() {
+    if (Platform.isWindows) {
+      PostMessage(
+        hwnd,
+        WM_SYSCOMMAND,
+        SC_RESTORE,
+        0,
+      );
+    }
+    // TODO: Missing implementation.
+  }
+
+  /// Minimizes the window holding Flutter view.
+  FutureOr<void> minimize() {
+    if (Platform.isWindows) {
+      PostMessage(
+        hwnd,
+        WM_SYSCOMMAND,
+        SC_MINIMIZE,
+        0,
+      );
+    }
+    // TODO: Missing implementation.
+  }
+
+  /// Closes the window holding Flutter view.
   ///
   /// This method respects the callback set by [setWindowCloseHandler] & saves window state before exit.
   ///
   /// If the set callback returns `false`, the window will not be closed.
   ///
-  void closeWindow() => FlutterWindowClose.closeWindow();
+  void close() => FlutterWindowClose.closeWindow();
 
-  /// Destroys the current window rendering the Flutter view.
+  /// Destroys the window holding Flutter view.
   ///
   /// This method does not respect the callback set by [setWindowCloseHandler] & does not save window state before exit.
   ///
-  void destroyWindow() => FlutterWindowClose.destroyWindow();
+  void destroy() => FlutterWindowClose.destroyWindow();
 
   double get captionPadding {
-    if (Platform.isWindows) {
+    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
       return getSystemMetrics(SM_CXBORDER);
     }
     return 0.0;
   }
 
   double get captionHeight {
-    if (Platform.isWindows) {
+    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
       return getSystemMetrics(SM_CYCAPTION) +
           getSystemMetrics(SM_CYSIZEFRAME) +
           getSystemMetrics(SM_CXPADDEDBORDER);
@@ -259,7 +346,7 @@ class WindowPlus extends WindowState {
   }
 
   Size get captionButtonSize {
-    if (Platform.isWindows) {
+    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
       final dx = getSystemMetrics(SM_CYCAPTION) * 2;
       final dy = captionHeight - captionPadding;
       return Size(dx, dy);
@@ -268,7 +355,7 @@ class WindowPlus extends WindowState {
   }
 
   double getSystemMetrics(int index) {
-    if (Platform.isWindows) {
+    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
       try {
         // Use DPI aware API [GetSystemMetricsForDpi] on Windows 10 1607+.
         if (WindowsInfo.instance.isWindows10RS1OrGreater) {
@@ -291,6 +378,34 @@ class WindowPlus extends WindowState {
     }
     // Non Windows platforms.
     return 0.0;
+  }
+
+  /// Whether the window is minimized.
+  bool get minimized {
+    if (Platform.isWindows) {
+      return IsIconic(hwnd) != 0;
+    }
+    // TODO: Missing implementation.
+    return false;
+  }
+
+  /// Whether the window is maximized.
+  bool get maximized {
+    if (Platform.isWindows) {
+      return IsZoomed(hwnd) != 0;
+    }
+    // TODO: Missing implementation.
+    return false;
+  }
+
+  /// Whether the window is fullscreen.
+  bool get fullscreen {
+    if (Platform.isWindows) {
+      final style = GetWindowLongPtr(hwnd, GWL_STYLE);
+      return !(style & WS_OVERLAPPEDWINDOW > 0);
+    }
+    // TODO: Missing implementation.
+    return false;
   }
 
   /// Only used on Windows.

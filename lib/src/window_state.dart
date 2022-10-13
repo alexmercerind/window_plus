@@ -1,3 +1,9 @@
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
+//
+// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
+//
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
+
 import 'dart:io';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
@@ -53,7 +59,7 @@ class WindowState {
       assert(hwnd != 0);
       // Only save the window state if the window is not minimized.
       if (IsIconic(hwnd) == 0) {
-        final maximized = IsZoomed(hwnd) == 1;
+        final maximized = IsZoomed(hwnd) != 0;
         final placement = calloc<WINDOWPLACEMENT>();
         placement.ref.length = sizeOf<WINDOWPLACEMENT>();
         GetWindowPlacement(hwnd, placement);
