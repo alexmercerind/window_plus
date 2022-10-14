@@ -74,27 +74,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_web_plugins:
-    dependency: transitive
-    description: flutter
-    source: sdk
-    version: "0.0.0"
-  flutter_window_close:
-    dependency: transitive
-    description:
-      path: "."
-      ref: "79e358db9e1edaa9dc147a7e31d73b0b3ba02cdb"
-      resolved-ref: "79e358db9e1edaa9dc147a7e31d73b0b3ba02cdb"
-      url: "https://github.com/harmonoid/flutter_window_close.git"
-    source: git
-    version: "0.2.2"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.6.4"
   lints:
     dependency: transitive
     description:
