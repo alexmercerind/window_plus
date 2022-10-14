@@ -3,13 +3,13 @@ import 'package:window_plus/window_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  WindowPlus.setWindowCloseHandler(() async {
-    debugPrint('[WindowPlus.setWindowCloseHandler]');
-    return true;
-  });
   await WindowPlus.ensureInitialized(
     application: 'com.alexmercerind.window_plus',
   );
+  WindowPlus.instance.setWindowCloseHandler(() async {
+    debugPrint('[WindowPlus.setWindowCloseHandler]');
+    return true;
+  });
   runApp(const MyApp());
 }
 

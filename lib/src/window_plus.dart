@@ -18,9 +18,6 @@ import 'package:window_plus/src/models/saved_window_state.dart';
 import 'package:window_plus/src/window_state.dart';
 import 'package:window_plus/src/utils/windows_info.dart';
 
-/// I refactored a lot of `package:flutter_window_close` & now it is in really good shape, so using existing implementation.
-import 'package:flutter_window_close/flutter_window_close.dart';
-
 /// The primary API to draw & handle the custom window frame.
 ///
 /// The application must call [ensureInitialized] before making use of any other APIs.
@@ -60,22 +57,11 @@ class WindowPlus extends WindowState {
   /// Pass an [application] name to uniquely identify the application.
   /// This is used to save & restore the window state at a well-defined location.
   ///
+  /// Calling this method makes the window rendering the Flutter view visible.
+  ///
   static Future<void> ensureInitialized({
     required String application,
   }) async {
-    FlutterWindowClose.setWindowShouldCloseHandler(
-      () async {
-        // Save the window state before closing the window.
-        try {
-          await WindowPlus.instance.save();
-        } catch (exception, stacktrace) {
-          debugPrint(exception.toString());
-          debugPrint(stacktrace.toString());
-        }
-        // Call the public handler.
-        return _windowCloseHandler?.call() ?? Future.value(true);
-      },
-    );
     if (Platform.isWindows) {
       _instance = WindowPlus._(application: application);
       // Make the window visible based on saved state.
@@ -91,6 +77,37 @@ class WindowPlus extends WindowState {
     }
   }
 
+  /// Whether the window is minimized.
+  bool get minimized {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      return IsIconic(hwnd) != 0;
+    }
+    // TODO: Missing implementation.
+    return false;
+  }
+
+  /// Whether the window is maximized.
+  bool get maximized {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      return IsZoomed(hwnd) != 0;
+    }
+    // TODO: Missing implementation.
+    return false;
+  }
+
+  /// Whether the window is fullscreen.
+  bool get fullscreen {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      final style = GetWindowLongPtr(hwnd, GWL_STYLE);
+      return !(style & WS_OVERLAPPEDWINDOW > 0);
+    }
+    // TODO: Missing implementation.
+    return false;
+  }
+
   /// This method must be called before [ensureInitialized].
   ///
   /// Sets a function to handle window close events.
@@ -102,16 +119,16 @@ class WindowPlus extends WindowState {
   /// ```dart
   /// Future<void> main() async {
   ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   WindowPlus.setWindowShouldCloseHandler(
+  ///   WindowPlus.ensureInitialized(
+  ///     application: 'com.alexmercerind.window_plus',
+  ///   );
+  ///   WindowPlus.instance.setWindowShouldCloseHandler(
   ///     () async {
   ///       if (isSomeOperationInProgress) {
   ///         return false;
   ///       }
   ///       return true;
   ///     },
-  ///   );
-  ///   WindowPlus.ensureInitialized(
-  ///     application: 'com.alexmercerind.window_plus',
   ///   );
   /// }
   /// ```
@@ -126,7 +143,7 @@ class WindowPlus extends WindowState {
   /// when a window close event happens. You can also reset the handler by
   /// passing null to the method.
   ///
-  static void setWindowCloseHandler(
+  void setWindowCloseHandler(
     Future<bool> Function()? windowCloseHandler,
   ) {
     assert(
@@ -142,6 +159,7 @@ class WindowPlus extends WindowState {
   /// Once [enabled] is passed as `false` in future, window will be restored back to it's prior state i.e. maximized or restored at same position & size.
   ///
   Future<void> setIsFullscreen(bool enabled) async {
+    assertEnsureInitialized();
     // The primary idea here is to revolve around |WS_OVERLAPPEDWINDOW| & detect/set fullscreen based on it.
     // On the native plugin side implementation, this is separately handled.
     // If there is no |WS_OVERLAPPEDWINDOW| style on the window i.e. in fullscreen, then no area is left for
@@ -163,7 +181,7 @@ class WindowPlus extends WindowState {
               placement.ref.rcNormalPosition.left,
           placement.ref.rcNormalPosition.bottom -
               placement.ref.rcNormalPosition.top,
-          IsZoomed(hwnd) == 1,
+          maximized,
         );
         GetMonitorInfo(
           MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
@@ -181,42 +199,8 @@ class WindowPlus extends WindowState {
         );
         calloc.free(placement);
         calloc.free(monitor);
-        // Refresh the parent [hwnd].
-        SetWindowPos(
-          hwnd,
-          NULL,
-          0,
-          0,
-          0,
-          0,
-          SWP_NOMOVE |
-              SWP_NOSIZE |
-              SWP_NOZORDER |
-              SWP_NOOWNERZORDER |
-              SWP_FRAMECHANGED,
-        );
-        // Correctly resize & position the child Flutter view [HWND].
-        final rect = calloc<RECT>();
-        final flutterWindowClassName =
-            kWin32FlutterViewWindowClass.toNativeUtf16();
-        final flutterWindowHWND = FindWindowEx(
-          hwnd,
-          0,
-          flutterWindowClassName,
-          nullptr,
-        );
-        GetClientRect(hwnd, rect);
-        SetWindowPos(
-          flutterWindowHWND,
-          NULL,
-          rect.ref.left,
-          rect.ref.top,
-          rect.ref.right - rect.ref.left,
-          rect.ref.bottom - rect.ref.top,
-          SWP_FRAMECHANGED,
-        );
-        calloc.free(flutterWindowClassName);
-        calloc.free(rect);
+        // calloc.free(flutterWindowClassName);
+        // calloc.free(rect);
       }
       // Restore to original state.
       else if (!enabled) {
@@ -278,6 +262,7 @@ class WindowPlus extends WindowState {
 
   /// Maximizes the window holding Flutter view.
   FutureOr<void> maximize() {
+    assertEnsureInitialized();
     if (Platform.isWindows) {
       PostMessage(
         hwnd,
@@ -291,6 +276,7 @@ class WindowPlus extends WindowState {
 
   /// Restores the window holding Flutter view.
   FutureOr<void> restore() {
+    assertEnsureInitialized();
     if (Platform.isWindows) {
       PostMessage(
         hwnd,
@@ -304,6 +290,7 @@ class WindowPlus extends WindowState {
 
   /// Minimizes the window holding Flutter view.
   FutureOr<void> minimize() {
+    assertEnsureInitialized();
     if (Platform.isWindows) {
       PostMessage(
         hwnd,
@@ -321,13 +308,35 @@ class WindowPlus extends WindowState {
   ///
   /// If the set callback returns `false`, the window will not be closed.
   ///
-  void close() => FlutterWindowClose.closeWindow();
+  FutureOr<void> close() {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      PostMessage(
+        hwnd,
+        WM_CLOSE,
+        0,
+        0,
+      );
+    }
+    // TODO: Missing implementation.
+  }
 
   /// Destroys the window holding Flutter view.
   ///
   /// This method does not respect the callback set by [setWindowCloseHandler] & does not save window state before exit.
   ///
-  void destroy() => FlutterWindowClose.destroyWindow();
+  Future<void> destroy() async {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      PostMessage(
+        hwnd,
+        WM_DESTROY,
+        0,
+        0,
+      );
+    }
+    // TODO: Missing implementation.
+  }
 
   double get captionPadding {
     if (WindowsInfo.instance.isWindows10RS1OrGreater) {
@@ -355,6 +364,7 @@ class WindowPlus extends WindowState {
   }
 
   double getSystemMetrics(int index) {
+    assertEnsureInitialized();
     if (WindowsInfo.instance.isWindows10RS1OrGreater) {
       try {
         // Use DPI aware API [GetSystemMetricsForDpi] on Windows 10 1607+.
@@ -380,32 +390,11 @@ class WindowPlus extends WindowState {
     return 0.0;
   }
 
-  /// Whether the window is minimized.
-  bool get minimized {
-    if (Platform.isWindows) {
-      return IsIconic(hwnd) != 0;
-    }
-    // TODO: Missing implementation.
-    return false;
-  }
-
-  /// Whether the window is maximized.
-  bool get maximized {
-    if (Platform.isWindows) {
-      return IsZoomed(hwnd) != 0;
-    }
-    // TODO: Missing implementation.
-    return false;
-  }
-
-  /// Whether the window is fullscreen.
-  bool get fullscreen {
-    if (Platform.isWindows) {
-      final style = GetWindowLongPtr(hwnd, GWL_STYLE);
-      return !(style & WS_OVERLAPPEDWINDOW > 0);
-    }
-    // TODO: Missing implementation.
-    return false;
+  void assertEnsureInitialized() {
+    assert(
+      _instance != null && hwnd != 0,
+      'Either [WindowPlus.ensureInitialized] is not called or window [HWND] could not be retrieved.',
+    );
   }
 
   /// Only used on Windows.
@@ -414,7 +403,29 @@ class WindowPlus extends WindowState {
       const SavedWindowState(0, 0, 0, 0, false);
 
   /// [MethodChannel] for communicating with the native side.
-  static const MethodChannel _channel = MethodChannel(kMethodChannelName);
+  static final MethodChannel _channel = const MethodChannel(kMethodChannelName)
+    ..setMethodCallHandler((call) async {
+      debugPrint(call.method);
+      switch (call.method) {
+        case kWindowCloseReceivedMethodName:
+          {
+            // Save the window state before closing the window.
+            try {
+              await WindowPlus.instance.save();
+            } catch (exception, stacktrace) {
+              debugPrint(exception.toString());
+              debugPrint(stacktrace.toString());
+            }
+            // Call the public handler.
+            final destroy =
+                await (_windowCloseHandler?.call() ?? Future.value(true));
+            if (destroy) {
+              _instance?.destroy();
+            }
+            break;
+          }
+      }
+    });
 
   /// The method which gets called when the window close event happens.
   /// This may be used to intercept the event and prevent the window from closing.

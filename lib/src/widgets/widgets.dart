@@ -327,13 +327,13 @@ class WindowRestoreMaximizeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IsZoomed(WindowPlus.instance.hwnd) == 0
-        ? WindowMaximizeButton(
+    return WindowPlus.instance.maximized
+        ? WindowRestoreButton(
             colors: colors,
             onPressed: onPressed,
             animate: animate,
           )
-        : WindowRestoreButton(
+        : WindowMaximizeButton(
             colors: colors,
             onPressed: onPressed,
             animate: animate,
