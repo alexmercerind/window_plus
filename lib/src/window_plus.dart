@@ -375,14 +375,14 @@ class WindowPlus extends WindowState {
   }
 
   double get captionPadding {
-    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
+    if (_enableCustomFrame) {
       return getSystemMetrics(SM_CXBORDER);
     }
     return 0.0;
   }
 
   double get captionHeight {
-    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
+    if (_enableCustomFrame) {
       return getSystemMetrics(SM_CYCAPTION) +
           getSystemMetrics(SM_CYSIZEFRAME) +
           getSystemMetrics(SM_CXPADDEDBORDER);
@@ -391,7 +391,7 @@ class WindowPlus extends WindowState {
   }
 
   Size get captionButtonSize {
-    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
+    if (_enableCustomFrame) {
       final dx = getSystemMetrics(SM_CYCAPTION) * 2;
       final dy = captionHeight - captionPadding;
       return Size(dx, dy);

@@ -312,7 +312,7 @@ void WindowPlusPlugin::HandleMethodCall(
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
     auto arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
     auto enable_custom_frame =
-        std::get<bool>(data[flutter::EncodableValue("enableCustomFrame")]);
+        std::get<bool>(arguments[flutter::EncodableValue("enableCustomFrame")]);
     if (enable_custom_frame && window_proc_delegate_id_ == -1) {
       caption_height_ = GetSystemMetricsForWindow(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
