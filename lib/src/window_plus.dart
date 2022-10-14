@@ -10,7 +10,6 @@ import 'dart:async';
 import 'dart:ffi' hide Size;
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:window_plus/src/common.dart';
@@ -68,23 +67,43 @@ class WindowPlus extends WindowState {
     required String application,
     bool? enableCustomFrame,
   }) async {
+    _instance = WindowPlus._(application: application);
     _instance?._enableCustomFrame =
         enableCustomFrame ?? WindowsInfo.instance.isWindows10RS1OrGreater;
-    if (Platform.isWindows) {
-      _instance = WindowPlus._(application: application);
-      // Make the window visible based on saved state.
-      _instance?.hwnd = await _channel.invokeMethod(
-        kEnsureInitializedMethodName,
-        {
-          'enableCustomFrame': _instance?._enableCustomFrame,
-          'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
-        },
-      );
-      debugPrint(_instance?.hwnd.toString());
-      debugPrint(_instance?.captionPadding.toString());
-      debugPrint(_instance?.captionHeight.toString());
-      debugPrint(_instance?.captionButtonSize.toString());
-    }
+    _instance?.channel.setMethodCallHandler((call) async {
+      debugPrint(call.method);
+      switch (call.method) {
+        case kWindowCloseReceivedMethodName:
+          {
+            // Save the window state before closing the window.
+            try {
+              await WindowPlus.instance.save();
+            } catch (exception, stacktrace) {
+              debugPrint(exception.toString());
+              debugPrint(stacktrace.toString());
+            }
+            // Call the public handler.
+            final destroy =
+                await (_windowCloseHandler?.call() ?? Future.value(true));
+            if (destroy) {
+              _instance?.destroy();
+            }
+            break;
+          }
+      }
+    });
+    // Make the window visible based on saved state.
+    _instance?.hwnd = await _instance?.channel.invokeMethod(
+      kEnsureInitializedMethodName,
+      {
+        'enableCustomFrame': _instance?._enableCustomFrame,
+        'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
+      },
+    );
+    debugPrint(_instance?.hwnd.toString());
+    debugPrint(_instance?.captionPadding.toString());
+    debugPrint(_instance?.captionHeight.toString());
+    debugPrint(_instance?.captionButtonSize.toString());
   }
 
   /// Whether the window is minimized.
@@ -327,8 +346,9 @@ class WindowPlus extends WindowState {
         0,
         0,
       );
+    } else {
+      return channel.invokeMethod<void>(kClose, {});
     }
-    // TODO: Missing implementation.
   }
 
   /// Destroys the window holding Flutter view.
@@ -344,8 +364,9 @@ class WindowPlus extends WindowState {
         0,
         0,
       );
+    } else {
+      return channel.invokeMethod<void>(kDestroy, {});
     }
-    // TODO: Missing implementation.
   }
 
   double get captionPadding {
@@ -414,31 +435,6 @@ class WindowPlus extends WindowState {
   /// Window [Rect] before entering fullscreen.
   SavedWindowState _savedWindowStateBeforeFullscreen =
       const SavedWindowState(0, 0, 0, 0, false);
-
-  /// [MethodChannel] for communicating with the native side.
-  static final MethodChannel _channel = const MethodChannel(kMethodChannelName)
-    ..setMethodCallHandler((call) async {
-      debugPrint(call.method);
-      switch (call.method) {
-        case kWindowCloseReceivedMethodName:
-          {
-            // Save the window state before closing the window.
-            try {
-              await WindowPlus.instance.save();
-            } catch (exception, stacktrace) {
-              debugPrint(exception.toString());
-              debugPrint(stacktrace.toString());
-            }
-            // Call the public handler.
-            final destroy =
-                await (_windowCloseHandler?.call() ?? Future.value(true));
-            if (destroy) {
-              _instance?.destroy();
-            }
-            break;
-          }
-      }
-    });
 
   /// The method which gets called when the window close event happens.
   /// This may be used to intercept the event and prevent the window from closing.

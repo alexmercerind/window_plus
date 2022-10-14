@@ -13,6 +13,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:safe_local_storage/safe_local_storage.dart';
 
+import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/models/saved_window_state.dart';
 
 class WindowState {
@@ -77,10 +78,10 @@ class WindowState {
         debugPrint(result.toString());
       }
     } else {
-      // TODO: Missing implementation.
-      throw MissingPluginException(
-        'No implementation found for [State.save] for ${Platform.operatingSystem}.',
-      );
+      final result = await channel.invokeMethod(kGetStateMethodName, {});
+      final state = Map<String, dynamic>.from(result);
+      await storage?.write(state);
+      debugPrint(state.toString());
     }
   }
 
@@ -111,4 +112,7 @@ class WindowState {
 
   /// The window handle to which this Flutter view is bound. Only Windows specific.
   int hwnd = 0;
+
+  /// [MethodChannel] for communicating with the native side.
+  final MethodChannel channel = const MethodChannel(kMethodChannelName);
 }
