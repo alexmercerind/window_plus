@@ -22,9 +22,15 @@ namespace window_plus {
 
 class WindowPlusPlugin : public flutter::Plugin {
  public:
+  flutter::MethodChannel<flutter::EncodableValue>* channel() const {
+    return channel_.get();
+  }
+
   static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
 
-  WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar);
+  WindowPlusPlugin(
+      flutter::PluginRegistrarWindows* registrar,
+      std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel);
 
   virtual ~WindowPlusPlugin();
 
@@ -53,12 +59,16 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   bool IsFullscreen();
 
-  int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index);
+  int32_t GetSystemMetricsForWindow(int32_t index);
 
-  std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
-                                                              UINT message,
-                                                              WPARAM wparam,
-                                                              LPARAM lparam);
+  std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message,
+                                            WPARAM wparam, LPARAM lparam);
+
+  // For Windows lower than 10 RS1, where custom frame isn't used.
+  // Does not handle |WM_NCHITTEST| & |WM_NCCALCSIZE| messages.
+  std::optional<HRESULT> FallbackWindowProcDelegate(HWND window, UINT message,
+                                                    WPARAM wparam,
+                                                    LPARAM lparam);
 
   static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
                                  LPARAM lparam, UINT_PTR id, DWORD_PTR data);
@@ -68,6 +78,8 @@ class WindowPlusPlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ =
+      nullptr;
   int32_t caption_height_ = 0;
   int64_t window_proc_delegate_id_ = -1;
   int32_t minimum_width_ = kWindowDefaultMinimumWidth;

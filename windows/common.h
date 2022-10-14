@@ -11,6 +11,7 @@ static constexpr auto kMethodChannelName = "com.alexmercerind/window_plus";
 
 static constexpr auto kEnsureInitializedMethodName = "ensureInitialized";
 static constexpr auto kSetStateMethodName = "setState";
+static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
 
 static constexpr auto kWindows10RTM = 10240;
 static constexpr auto kWindows10RS1 = 14393;

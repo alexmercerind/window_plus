@@ -15,8 +15,10 @@
 
 namespace window_plus {
 
-WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
-    : registrar_(registrar) {}
+WindowPlusPlugin::WindowPlusPlugin(
+    flutter::PluginRegistrarWindows* registrar,
+    std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel)
+    : registrar_(registrar), channel_(std::move(channel)) {}
 
 WindowPlusPlugin::~WindowPlusPlugin() {
   if (window_proc_delegate_id_ != -1) {
@@ -104,6 +106,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       return 1;
     }
     // Separately handle window caption area dragging.
+    // |WM_CAPTIONAREA| is custom window message, see: WM_USER.
     case WM_CAPTIONAREA: {
       ::ReleaseCapture();
       ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
@@ -220,6 +223,53 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       }
       return 0;
     }
+    case WM_CLOSE: {
+      try {
+        // Notify Flutter.
+        channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
+                               nullptr);
+        // Returning 0 means that we're handling the message & window won't be
+        // closed, until |WM_DESTROY| is sent.
+      } catch (...) {
+        // Enclosing in try-catch clause to prevent any unhandled exceptions.
+      }
+      return 0;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
+    HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+  switch (message) {
+    case WM_GETMINMAXINFO: {
+      auto info = (LPMINMAXINFO)lparam;
+      if (minimum_width_ != -1 && minimum_height_ != -1) {
+        info->ptMinTrackSize.x = minimum_width_;
+        info->ptMinTrackSize.y = minimum_height_;
+      }
+    }
+    case WM_ERASEBKGND: {
+      return 1;
+    }
+    // Separately handle window caption area dragging.
+    // |WM_CAPTIONAREA| is custom window message, see: WM_USER.
+    case WM_CAPTIONAREA: {
+      ::ReleaseCapture();
+      ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+    }
+    case WM_CLOSE: {
+      try {
+        // Notify Flutter.
+        channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
+                               nullptr);
+        // Returning 0 means that we're handling the message & window won't be
+        // closed, until |WM_DESTROY| is sent.
+      } catch (...) {
+        // Enclosing in try-catch clause to prevent any unhandled exceptions.
+      }
+      return 0;
+    }
   }
   return std::nullopt;
 }
@@ -260,9 +310,7 @@ void WindowPlusPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
-    if (IsWindows10RTMOrGreater() && window_proc_delegate_id_ == -1) {
-      // |title_bar_height_| is zero on Windows versions where a custom frame
-      // isn't used, because Flutter doesn't need to draw one itself.
+    if (IsWindows10RS1OrGreater() && window_proc_delegate_id_ == -1) {
       caption_height_ = GetSystemMetricsForWindow(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
@@ -273,6 +321,14 @@ void WindowPlusPlugin::HandleMethodCall(
                           reinterpret_cast<DWORD_PTR>(this));
       auto margins = MARGINS{0, 0, 0, 1};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
+    } else if (!IsWindows10RS1OrGreater() && window_proc_delegate_id_ == -1) {
+      // |caption_height_| is zero on Windows versions where a custom frame
+      // isn't used, because Flutter doesn't need to draw one itself.
+      caption_height_ = 0;
+      window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
+          std::bind(&WindowPlusPlugin::FallbackWindowProcDelegate, this,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, std::placeholders::_4));
     }
     auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE |
                    SWP_FRAMECHANGED;
@@ -351,10 +407,11 @@ void WindowPlusPlugin::RegisterWithRegistrar(
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           registrar->messenger(), kMethodChannelName,
           &flutter::StandardMethodCodec::GetInstance());
-  auto plugin = std::make_unique<WindowPlusPlugin>(registrar);
-  channel->SetMethodCallHandler(
-      [plugin_pointer = plugin.get()](const auto& call, auto result) {
-        plugin_pointer->HandleMethodCall(call, std::move(result));
+  auto plugin =
+      std::make_unique<WindowPlusPlugin>(registrar, std::move(channel));
+  plugin->channel()->SetMethodCallHandler(
+      [plugin_ptr = plugin.get()](const auto& call, auto result) {
+        plugin_ptr->HandleMethodCall(call, std::move(result));
       });
   registrar->AddPlugin(std::move(plugin));
 }
