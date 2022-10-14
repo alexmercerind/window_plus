@@ -8,8 +8,9 @@
 static constexpr auto kMethodChannelName = "com.alexmercerind/window_plus";
 static constexpr auto kEnsureInitializedMethodName = "ensureInitialized";
 static constexpr auto kGetStateMethodName = "getState";
-static constexpr auto kClose = "close";
-static constexpr auto kDestroy = "destroy";
+static constexpr auto kCloseMethodName = "close";
+static constexpr auto kDestroyMethodName = "destroy";
+static constexpr auto kSetIsFullscreenMethodName = "setIsFullscreen";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
 static constexpr auto kMonitorSafeArea = 36;
 
@@ -133,18 +134,31 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     fl_value_set_string_take(result, "height", fl_value_new_int(height));
     fl_value_set_string_take(result, "maximized", fl_value_new_bool(maximized));
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
-  } else if (strcmp(method, kClose) == 0) {
+  } else if (strcmp(method, kCloseMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     gtk_window_close(window);
     response =
         FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
-  } else if (strcmp(method, kDestroy) == 0) {
+  } else if (strcmp(method, kDestroyMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     std::thread([=]() {
       g_signal_emit_by_name(G_OBJECT(window), "destroy");
     }).detach();
+    response =
+        FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+  } else if (strcmp(method, kSetIsFullscreenMethodName) == 0) {
+    FlValue* arguments = fl_method_call_get_args(method_call);
+    bool enabled =
+        fl_value_get_bool(fl_value_lookup_string(arguments, "enabled"));
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    if (enabled) {
+      gtk_window_fullscreen(window);
+    } else {
+      gtk_window_unfullscreen(window);
+    }
     response =
         FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else {

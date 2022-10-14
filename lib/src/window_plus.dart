@@ -284,9 +284,14 @@ class WindowPlus extends WindowState {
           calloc.free(rect);
         }
       }
+    } else {
+      return channel.invokeMethod<void>(
+        kSetIsFullscreenMethodName,
+        {
+          'enabled': enabled,
+        },
+      );
     }
-    // TODO: Missing implementation.
-    return Future.value(null);
   }
 
   /// Maximizes the window holding Flutter view.
@@ -347,7 +352,7 @@ class WindowPlus extends WindowState {
         0,
       );
     } else {
-      return channel.invokeMethod<void>(kClose, {});
+      return channel.invokeMethod<void>(kCloseMethodName, {});
     }
   }
 
@@ -365,7 +370,7 @@ class WindowPlus extends WindowState {
         0,
       );
     } else {
-      return channel.invokeMethod<void>(kDestroy, {});
+      return channel.invokeMethod<void>(kDestroyMethodName, {});
     }
   }
 

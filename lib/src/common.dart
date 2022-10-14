@@ -11,8 +11,9 @@ const String kMethodChannelName = 'com.alexmercerind/window_plus';
 const String kEnsureInitializedMethodName = 'ensureInitialized';
 const String kSetStateMethodName = 'setState';
 const String kGetStateMethodName = 'getState';
-const String kClose = 'close';
-const String kDestroy = 'destroy';
+const String kCloseMethodName = 'close';
+const String kDestroyMethodName = 'destroy';
+const String kSetIsFullscreenMethodName = 'setIsFullscreen';
 const String kWindowCloseReceivedMethodName = 'windowCloseReceived';
 
 const String kCaptionHeightKey = 'captionHeight';
