@@ -59,16 +59,26 @@ class WindowPlus extends WindowState {
   ///
   /// Calling this method makes the window rendering the Flutter view visible.
   ///
+  /// [enableCustomFrame] argument decides whether a custom window frame should be
+  /// used or not. By default, [enableCustomFrame] will be `true` for Windows 10
+  /// RS1 (Anniversary Update) or higher (i.e. Windows 10 & 11). Enabling this on
+  /// older Windows versions may result in undefined behaviors & thus not recommended.
+  ///
   static Future<void> ensureInitialized({
     required String application,
+    bool? enableCustomFrame,
   }) async {
+    _instance?._enableCustomFrame =
+        enableCustomFrame ?? WindowsInfo.instance.isWindows10RS1OrGreater;
     if (Platform.isWindows) {
       _instance = WindowPlus._(application: application);
       // Make the window visible based on saved state.
-      final savedWindowState = await _instance?.savedWindowState;
       _instance?.hwnd = await _channel.invokeMethod(
         kEnsureInitializedMethodName,
-        savedWindowState?.toJson(),
+        {
+          'enableCustomFrame': _instance?._enableCustomFrame,
+          'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
+        },
       );
       debugPrint(_instance?.hwnd.toString());
       debugPrint(_instance?.captionPadding.toString());
@@ -396,6 +406,9 @@ class WindowPlus extends WindowState {
       'Either [WindowPlus.ensureInitialized] is not called or window [HWND] could not be retrieved.',
     );
   }
+
+  /// Whether a custom window frame should be used or not.
+  bool _enableCustomFrame = false;
 
   /// Only used on Windows.
   /// Window [Rect] before entering fullscreen.

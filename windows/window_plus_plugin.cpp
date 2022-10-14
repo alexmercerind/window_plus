@@ -310,7 +310,10 @@ void WindowPlusPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
-    if (IsWindows10RS1OrGreater() && window_proc_delegate_id_ == -1) {
+    auto arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
+    auto enable_custom_frame =
+        std::get<bool>(data[flutter::EncodableValue("enableCustomFrame")]);
+    if (enable_custom_frame && window_proc_delegate_id_ == -1) {
       caption_height_ = GetSystemMetricsForWindow(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
@@ -321,7 +324,7 @@ void WindowPlusPlugin::HandleMethodCall(
                           reinterpret_cast<DWORD_PTR>(this));
       auto margins = MARGINS{0, 0, 0, 1};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
-    } else if (!IsWindows10RS1OrGreater() && window_proc_delegate_id_ == -1) {
+    } else if (!enable_custom_frame && window_proc_delegate_id_ == -1) {
       // |caption_height_| is zero on Windows versions where a custom frame
       // isn't used, because Flutter doesn't need to draw one itself.
       caption_height_ = 0;
@@ -334,9 +337,11 @@ void WindowPlusPlugin::HandleMethodCall(
                    SWP_FRAMECHANGED;
     ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
     try {
-      if (auto saved_window_state =
-              std::get_if<flutter::EncodableMap>(method_call.arguments())) {
-        auto data = *saved_window_state;
+      auto saved_window_state =
+          arguments[flutter::EncodableValue("savedWindowState")];
+      if (auto value =
+              std::get_if<flutter::EncodableMap>(&saved_window_state)) {
+        auto data = *value;
         auto x = std::get<int32_t>(data[flutter::EncodableValue("x")]);
         auto y = std::get<int32_t>(data[flutter::EncodableValue("y")]);
         auto width = std::get<int32_t>(data[flutter::EncodableValue("width")]);
