@@ -271,13 +271,19 @@ class WindowPlus extends WindowState {
             nullptr,
           );
           GetClientRect(hwnd, rect);
+          final shift = _enableCustomFrame
+              ? (getSystemMetrics(SM_CYFRAME) +
+                      getSystemMetrics(SM_CXPADDEDBORDER)) *
+                  window.devicePixelRatio ~/
+                  1
+              : 0;
           SetWindowPos(
             flutterWindowHWND,
             NULL,
             rect.ref.left,
-            rect.ref.top,
+            rect.ref.top + shift,
             rect.ref.right - rect.ref.left,
-            rect.ref.bottom - rect.ref.top,
+            rect.ref.bottom - rect.ref.top - shift,
             SWP_FRAMECHANGED,
           );
           calloc.free(flutterWindowClassName);
