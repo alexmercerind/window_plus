@@ -3,6 +3,7 @@
 #include <flutter_windows.h>
 
 #include "resource.h"
+#include "window_plus/window_plus_plugin_c_api.h"
 
 namespace {
 
@@ -168,12 +169,7 @@ Win32Window::MessageHandler(HWND hwnd, UINT const message, WPARAM const wparam,
       return 0;
     }
     case WM_SIZE: {
-      RECT rect = GetClientArea();
-      if (child_content_ != nullptr) {
-        // Size and position the child window.
-        MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
-                   rect.bottom - rect.top, TRUE);
-      }
+      WindowPlusPluginCApiAlignChildContent(child_content_, hwnd);
       return 0;
     }
 
@@ -207,11 +203,7 @@ Win32Window* Win32Window::GetThisFromHandle(HWND const window) noexcept {
 void Win32Window::SetChildContent(HWND content) {
   child_content_ = content;
   SetParent(content, window_handle_);
-  RECT frame = GetClientArea();
-
-  MoveWindow(content, frame.left, frame.top, frame.right - frame.left,
-             frame.bottom - frame.top, true);
-
+  WindowPlusPluginCApiAlignChildContent(child_content_, window_handle_);
   SetFocus(child_content_);
 }
 
