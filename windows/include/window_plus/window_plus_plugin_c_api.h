@@ -23,9 +23,6 @@ extern "C" {
 FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
 
-FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiAlignChildContent(HWND child,
-                                                                 HWND window);
-
 #if defined(__cplusplus)
 }  // extern "C"
 #endif

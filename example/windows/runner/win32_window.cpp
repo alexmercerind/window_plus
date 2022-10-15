@@ -168,11 +168,6 @@ Win32Window::MessageHandler(HWND hwnd, UINT const message, WPARAM const wparam,
 
       return 0;
     }
-    case WM_SIZE: {
-      WindowPlusPluginCApiAlignChildContent(child_content_, hwnd);
-      return 0;
-    }
-
     case WM_ACTIVATE:
       if (child_content_ != nullptr) {
         SetFocus(child_content_);
@@ -203,7 +198,6 @@ Win32Window* Win32Window::GetThisFromHandle(HWND const window) noexcept {
 void Win32Window::SetChildContent(HWND content) {
   child_content_ = content;
   SetParent(content, window_handle_);
-  WindowPlusPluginCApiAlignChildContent(child_content_, window_handle_);
   SetFocus(child_content_);
 }
 
