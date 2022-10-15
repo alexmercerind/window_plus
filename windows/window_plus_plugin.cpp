@@ -15,10 +15,16 @@
 
 namespace window_plus {
 
-WindowPlusPlugin::WindowPlusPlugin(
-    flutter::PluginRegistrarWindows* registrar,
-    std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel)
-    : registrar_(registrar), channel_(std::move(channel)) {}
+WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
+    : registrar_(registrar),
+      channel_(
+          std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+              registrar->messenger(), kMethodChannelName,
+              &flutter::StandardMethodCodec::GetInstance())) {
+  channel_->SetMethodCallHandler([&](const auto& call, auto result) {
+    HandleMethodCall(call, std::move(result));
+  });
+}
 
 WindowPlusPlugin::~WindowPlusPlugin() {
   if (window_proc_delegate_id_ != -1) {
@@ -314,7 +320,6 @@ void WindowPlusPlugin::HandleMethodCall(
     auto enable_custom_frame =
         std::get<bool>(arguments[flutter::EncodableValue("enableCustomFrame")]);
     if (enable_custom_frame && window_proc_delegate_id_ == -1) {
-      caption_height_ = GetSystemMetricsForWindow(SM_CYCAPTION);
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
@@ -325,14 +330,12 @@ void WindowPlusPlugin::HandleMethodCall(
       auto margins = MARGINS{0, 0, 0, 1};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
     } else if (!enable_custom_frame && window_proc_delegate_id_ == -1) {
-      // |caption_height_| is zero on Windows versions where a custom frame
-      // isn't used, because Flutter doesn't need to draw one itself.
-      caption_height_ = 0;
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::FallbackWindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, std::placeholders::_4));
     }
+    // Send a |WM_NCCALCSIZE|.
     auto refresh = SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE |
                    SWP_FRAMECHANGED;
     ::SetWindowPos(GetWindow(), nullptr, 0, 0, 0, 0, refresh);
@@ -356,7 +359,7 @@ void WindowPlusPlugin::HandleMethodCall(
         point.y = y;
         auto dpi = FlutterDesktopGetDpiForMonitor(
             ::MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST));
-        double scale_factor = dpi / 96.0;
+        auto scale_factor = dpi / 96.0;
         monitor.left += static_cast<LONG>(kMonitorSafeArea * scale_factor);
         monitor.top += static_cast<LONG>(kMonitorSafeArea * scale_factor);
         monitor.right -= static_cast<LONG>(kMonitorSafeArea * scale_factor);
@@ -408,16 +411,7 @@ void WindowPlusPlugin::HandleMethodCall(
 
 void WindowPlusPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows* registrar) {
-  auto channel =
-      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          registrar->messenger(), kMethodChannelName,
-          &flutter::StandardMethodCodec::GetInstance());
-  auto plugin =
-      std::make_unique<WindowPlusPlugin>(registrar, std::move(channel));
-  plugin->channel()->SetMethodCallHandler(
-      [plugin_ptr = plugin.get()](const auto& call, auto result) {
-        plugin_ptr->HandleMethodCall(call, std::move(result));
-      });
+  auto plugin = std::make_unique<WindowPlusPlugin>(registrar);
   registrar->AddPlugin(std::move(plugin));
 }
 

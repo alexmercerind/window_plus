@@ -22,20 +22,18 @@ namespace window_plus {
 
 class WindowPlusPlugin : public flutter::Plugin {
  public:
-  flutter::MethodChannel<flutter::EncodableValue>* channel() const {
-    return channel_.get();
-  }
-
   static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
 
-  WindowPlusPlugin(
-      flutter::PluginRegistrarWindows* registrar,
-      std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel);
+  WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar);
 
   virtual ~WindowPlusPlugin();
 
   WindowPlusPlugin(const WindowPlusPlugin&) = delete;
   WindowPlusPlugin& operator=(const WindowPlusPlugin&) = delete;
+
+  HWND GetWindow();
+
+  int32_t GetSystemMetricsForWindow(int32_t index);
 
  private:
   static constexpr auto kMonitorSafeArea = 36;
@@ -47,8 +45,6 @@ class WindowPlusPlugin : public flutter::Plugin {
   static constexpr auto kWindowDefaultMinimumWidth = 960;
   static constexpr auto kWindowDefaultMinimumHeight = 640;
 
-  HWND GetWindow();
-
   RECT GetMonitorRect();
 
   RTL_OSVERSIONINFOW GetWindowsVersion();
@@ -58,8 +54,6 @@ class WindowPlusPlugin : public flutter::Plugin {
   bool IsWindows10RS1OrGreater();
 
   bool IsFullscreen();
-
-  int32_t GetSystemMetricsForWindow(int32_t index);
 
   std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message,
                                             WPARAM wparam, LPARAM lparam);
@@ -80,7 +74,6 @@ class WindowPlusPlugin : public flutter::Plugin {
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ =
       nullptr;
-  int32_t caption_height_ = 0;
   int64_t window_proc_delegate_id_ = -1;
   int32_t minimum_width_ = kWindowDefaultMinimumWidth;
   int32_t minimum_height_ = kWindowDefaultMinimumHeight;
