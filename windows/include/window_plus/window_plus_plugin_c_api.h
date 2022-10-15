@@ -7,6 +7,7 @@
 #ifndef WINDOW_PLUS_WINDOW_PLUS_PLUGIN_C_API_H_
 #define WINDOW_PLUS_WINDOW_PLUS_PLUGIN_C_API_H_
 
+#include <Windows.h>
 #include <flutter_plugin_registrar.h>
 
 #ifdef FLUTTER_PLUGIN_IMPL
@@ -21,6 +22,9 @@ extern "C" {
 
 FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
+
+FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiAlignChildContent(HWND child,
+                                                                 HWND window);
 
 #if defined(__cplusplus)
 }  // extern "C"

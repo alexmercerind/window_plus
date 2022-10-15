@@ -77,7 +77,8 @@ bool WindowPlusPlugin::IsFullscreen() {
   return !(::GetWindowLongPtr(GetWindow(), GWL_STYLE) & WS_OVERLAPPEDWINDOW);
 }
 
-int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
+int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index,
+                                                    HWND window) {
   if (IsWindows10RS1OrGreater()) {
     auto module = ::GetModuleHandleW(L"User32.dll");
     if (module) {
@@ -88,12 +89,39 @@ int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
           ::GetProcAddress(module, "GetDpiForWindow"));
       if (GetSystemMetricsForDpi != nullptr && GetDpiForWindow != nullptr) {
         // DPI aware metrics.
-        return GetSystemMetricsForDpi(index, GetDpiForWindow(GetWindow()));
+        return GetSystemMetricsForDpi(index, GetDpiForWindow(window));
       }
     }
   }
   // System metrics without any DPI awareness.
   return ::GetSystemMetrics(index);
+}
+
+POINT WindowPlusPlugin::GetDefaultWindowPadding(HWND window) {
+  auto x = GetSystemMetricsForWindow(SM_CXFRAME, window) +
+           GetSystemMetricsForWindow(SM_CXPADDEDBORDER, window);
+  auto y = GetSystemMetricsForWindow(SM_CYFRAME, window) +
+           GetSystemMetricsForWindow(SM_CXPADDEDBORDER, window);
+  return POINT{x, y};
+}
+
+void WindowPlusPlugin::AlignChildContent(HWND child, HWND window) {
+  if (enable_custom_frame_) {
+    auto padding = GetDefaultWindowPadding(window);
+    auto frame = RECT{};
+    ::GetClientRect(window, &frame);
+    // Make some room at the top, to prevent the shift of the content upon fresh
+    // launch in maximized state.
+    ::MoveWindow(child, frame.left, frame.top + padding.y,
+                 frame.right - frame.left, frame.bottom - frame.top - padding.y,
+                 TRUE);
+  } else {
+    // No need to do this, if the custom frame is disabled.
+    auto frame = RECT{};
+    ::GetClientRect(window, &frame);
+    ::MoveWindow(child, frame.left, frame.top, frame.right - frame.left,
+                 frame.bottom - frame.top, TRUE);
+  }
 }
 
 std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
@@ -124,10 +152,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
         return HTCLIENT;
       }
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
-      const POINT border{GetSystemMetricsForWindow(SM_CXFRAME) +
-                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
-                         GetSystemMetricsForWindow(SM_CYFRAME) +
-                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
+      const POINT border = GetDefaultWindowPadding(GetWindow());
       RECT rect;
       ::GetWindowRect(GetWindow(), &rect);
       // Bit values to handle multiple regions at once at corners.
@@ -184,9 +209,11 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
             (params->lppos->cx > (monitor_rect.right - monitor_rect.left)) &&
             (params->lppos->cy > (monitor_rect.bottom - monitor_rect.top))) {
           params->lppos->x = monitor_rect.left;
-          params->lppos->y = monitor_rect.top;
           params->lppos->cx = monitor_rect.right - monitor_rect.left;
-          params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
+          // No need to modify the vertical alignment of the child |HWND| after
+          // |AlignChildContent| implementation has landed.
+          // params->lppos->y = monitor_rect.top;
+          // params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
         }
       }
       // I have no idea why this |for| loop exists but whatever.
@@ -196,18 +223,21 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
             (params->rgrc[i].right > monitor_rect.right) &&
             (params->rgrc[i].bottom > monitor_rect.bottom)) {
           params->rgrc[i].left = monitor_rect.left;
-          params->rgrc[i].top = monitor_rect.top;
           params->rgrc[i].right = monitor_rect.right;
-          params->rgrc[i].bottom = monitor_rect.bottom;
+          // No need to modify the vertical alignment of the child |HWND| after
+          // |AlignChildContent| implementation has landed.
+          // params->rgrc[i].top = monitor_rect.top;
+          // params->rgrc[i].bottom = monitor_rect.bottom;
         }
       }
       // Handle the window in restored state.
-      const POINT border{GetSystemMetricsForWindow(SM_CXFRAME) +
-                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
-                         GetSystemMetricsForWindow(SM_CYFRAME) +
-                             GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
+      const POINT border = GetDefaultWindowPadding(GetWindow());
       if (::IsZoomed(GetWindow())) {
         params->rgrc[0].top -= 1;
+        // Post |AlignChildContent| implementation.
+        if (IsFullscreen()) {
+          params->rgrc[0].top -= border.y;
+        }
       } else {
         // In Windows, when window frame (i.e. controls & border) is drawn, the
         // space of the client is actually reduced to make space for the resize
@@ -221,6 +251,9 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
         //
         // Only reduce the client area for |WM_NCHHITTEST| handling if the
         // window is not fullscreen.
+
+        // Post |AlignChildContent| implementation.
+        params->rgrc[0].top -= border.y;
         if (!IsFullscreen()) {
           params->rgrc[0].bottom -= border.y;
           params->rgrc[0].left += border.x;
@@ -293,11 +326,7 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
       RECT rect;
       ::GetWindowRect(window, &rect);
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
-      const POINT border{
-          plugin->GetSystemMetricsForWindow(SM_CXFRAME) +
-              plugin->GetSystemMetricsForWindow(SM_CXPADDEDBORDER),
-          plugin->GetSystemMetricsForWindow(SM_CYFRAME) +
-              plugin->GetSystemMetricsForWindow(SM_CXPADDEDBORDER)};
+      const POINT border = GetDefaultWindowPadding(plugin->GetWindow());
       if (
           // No need to make room for resize border in maximized state or
           // fullscreen state.
@@ -317,9 +346,9 @@ void WindowPlusPlugin::HandleMethodCall(
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare(kEnsureInitializedMethodName) == 0) {
     auto arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
-    auto enable_custom_frame =
+    enable_custom_frame_ =
         std::get<bool>(arguments[flutter::EncodableValue("enableCustomFrame")]);
-    if (enable_custom_frame && window_proc_delegate_id_ == -1) {
+    if (enable_custom_frame_ && window_proc_delegate_id_ == -1) {
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
@@ -327,9 +356,12 @@ void WindowPlusPlugin::HandleMethodCall(
       ::SetWindowSubclass(registrar_->GetView()->GetNativeWindow(),
                           ChildWindowProc, 1,
                           reinterpret_cast<DWORD_PTR>(this));
-      auto margins = MARGINS{0, 0, 0, 1};
+      // |DwmExtendFrameIntoClientArea| is working fine with 0 |MARGINS| because
+      // the window has |WS_OVERLAPPEDWINDOW| style. Calling this causes window
+      // to have black border which makes it feel like a frameless window.
+      auto margins = MARGINS{0, 0, 0, 0};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
-    } else if (!enable_custom_frame && window_proc_delegate_id_ == -1) {
+    } else if (!enable_custom_frame_ && window_proc_delegate_id_ == -1) {
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::FallbackWindowProcDelegate, this,
                     std::placeholders::_1, std::placeholders::_2,
@@ -414,5 +446,7 @@ void WindowPlusPlugin::RegisterWithRegistrar(
   auto plugin = std::make_unique<WindowPlusPlugin>(registrar);
   registrar->AddPlugin(std::move(plugin));
 }
+
+bool WindowPlusPlugin::enable_custom_frame_ = false;
 
 }  // namespace window_plus

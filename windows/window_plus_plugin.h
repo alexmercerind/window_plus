@@ -33,7 +33,19 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   HWND GetWindow();
 
-  int32_t GetSystemMetricsForWindow(int32_t index);
+  static RTL_OSVERSIONINFOW GetWindowsVersion();
+
+  static bool IsWindows10RTMOrGreater();
+
+  static bool IsWindows10RS1OrGreater();
+
+  static int32_t GetSystemMetricsForWindow(int32_t index, HWND window);
+
+  static POINT GetDefaultWindowPadding(HWND window);
+
+  // Replaces the existing |MoveWindow| behavior in Windows runner template to
+  // be more friendly to custom title-bar and frameless windows.
+  static void AlignChildContent(HWND child, HWND window);
 
  private:
   static constexpr auto kMonitorSafeArea = 36;
@@ -46,12 +58,6 @@ class WindowPlusPlugin : public flutter::Plugin {
   static constexpr auto kWindowDefaultMinimumHeight = 640;
 
   RECT GetMonitorRect();
-
-  RTL_OSVERSIONINFOW GetWindowsVersion();
-
-  bool IsWindows10RTMOrGreater();
-
-  bool IsWindows10RS1OrGreater();
 
   bool IsFullscreen();
 
@@ -77,6 +83,13 @@ class WindowPlusPlugin : public flutter::Plugin {
   int64_t window_proc_delegate_id_ = -1;
   int32_t minimum_width_ = kWindowDefaultMinimumWidth;
   int32_t minimum_height_ = kWindowDefaultMinimumHeight;
+  // TODO(@alexmercerind): Re-structure code.
+  // Possibly convert |WindowPlusPlugin| into a singleton & get rid of all the
+  // static methods & attributes. This will also get rid of any parameters in
+  // |AlignChildContent|.
+  // Ideally there is no need to even expose |AlignChildContent| to public API,
+  // since we can register a window proc delegate within the plugin interface.
+  static bool enable_custom_frame_;
 };
 
 }  // namespace window_plus

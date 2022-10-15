@@ -14,3 +14,7 @@ void WindowPlusPluginCApiRegisterWithRegistrar(
       flutter::PluginRegistrarManager::GetInstance()
           ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }
+
+void WindowPlusPluginCApiAlignChildContent(HWND child, HWND window) {
+  window_plus::WindowPlusPlugin::AlignChildContent(child, window);
+}
