@@ -161,9 +161,9 @@ However, as time went by a number of issues were faced like:
 - Windows 7 support.
 - Other stability & crash issues.
 
-I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's "not the trend" (see: Discord, Visual Studio Code or Spotify). I believe for ensuring compatibility with _all_ Desktop Environments like KDE, XFCE, Gnome & other tiling ones, best is to customize native behavior as less as possible. On the other hand, most GNU/Linux Desktop Environments offer various customization options e.g. changing window buttons, frames, borders & their style / position anyway, this will be unusable after implementing a custom frame.
+I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's "not the trend" (see: Discord, Visual Studio Code or Spotify). I believe for ensuring compatibility with _all_ Desktop Environments like KDE, XFCE, Gnome & other tiling ones, best is to customize the native window behavior as less as possible. On the other hand, most GNU/Linux Desktop Environments offer various customization options e.g. for changing window buttons, frames, borders & their style / position anyway, this will be unusable after implementing a custom frame.
 
-This gave birth to [my fork](https://github.com/alexmercerind/bitsdojo_window), after mending things in a dirty manner (partially due to the fact that my style of writing code being different), the code became spaghetti & now it's something I can no longer trust.
+This gave birth to [my fork](https://github.com/alexmercerind/bitsdojo_window), after mending things in a dirty manner (partially due to the fact that my style of writing code is different), the code became spaghetti & now it's something I can no longer trust.
 
 Now `package:window_plus` is more cleaner (follows [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)) & has additional features like:
 - Ability to intercept window close event.
