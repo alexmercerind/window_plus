@@ -89,13 +89,39 @@ class WindowState {
   String get localStorageFilePath {
     switch (Platform.operatingSystem) {
       case 'windows':
-        return join(
-          Platform.environment['USERPROFILE']!,
-          'AppData',
-          'Roaming',
-          application,
-          'WindowState.JSON',
-        );
+        // `SHGetKnownFolderPath` Win32 API call.
+        final rfid = GUIDFromString(FOLDERID_RoamingAppData);
+        final result = calloc<PWSTR>();
+        try {
+          final hr = SHGetKnownFolderPath(
+            rfid,
+            KF_FLAG_DEFAULT,
+            NULL,
+            result,
+          );
+          if (FAILED(hr)) {
+            throw WindowsException(hr);
+          }
+          return join(
+            canonicalize(result.value.toDartString()),
+            application,
+            'WindowState.JSON',
+          );
+        } catch (exception, stacktrace) {
+          debugPrint(exception.toString());
+          debugPrint(stacktrace.toString());
+          // Fallback solution for retrieving the user's `AppData/Roaming` [Directory] using environment variables.
+          return join(
+            Platform.environment['USERPROFILE']!,
+            'AppData',
+            'Roaming',
+            application,
+            'WindowState.JSON',
+          );
+        } finally {
+          calloc.free(rfid);
+          calloc.free(result);
+        }
       case 'linux':
         return join(
           Platform.environment['HOME']!,
