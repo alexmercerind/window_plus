@@ -32,12 +32,10 @@ class WindowPlusPlugin : public flutter::Plugin {
   WindowPlusPlugin& operator=(const WindowPlusPlugin&) = delete;
 
  private:
+  // TODO (@alexmercerind): Expose in public API.
   static constexpr auto kMonitorSafeArea = 8;
   static constexpr auto kWindowDefaultWidth = 1024;
   static constexpr auto kWindowDefaultHeight = 640;
-  // TODO (@alexmercerind): Expose in public API.
-  // Currently handling |WM_GETMINMAXINFO| as per Harmonoid's requirements.
-  // See: https://github.com/harmonoid/harmonoid.
   static constexpr auto kWindowDefaultMinimumWidth = 960;
   static constexpr auto kWindowDefaultMinimumHeight = 640;
 

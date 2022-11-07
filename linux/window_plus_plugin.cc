@@ -3,6 +3,7 @@
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
 
+#include <iostream>
 #include <thread>
 
 static constexpr auto kMethodChannelName = "com.alexmercerind/window_plus";
@@ -12,7 +13,13 @@ static constexpr auto kCloseMethodName = "close";
 static constexpr auto kDestroyMethodName = "destroy";
 static constexpr auto kSetIsFullscreenMethodName = "setIsFullscreen";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
-static constexpr auto kMonitorSafeArea = 36;
+
+// TODO (@alexmercerind): Expose in public API.
+static constexpr auto kMonitorSafeArea = 8;
+static constexpr auto kWindowDefaultWidth = 1024;
+static constexpr auto kWindowDefaultHeight = 640;
+static constexpr auto kWindowDefaultMinimumWidth = 960;
+static constexpr auto kWindowDefaultMinimumHeight = 640;
 
 #define WINDOW_PLUS_PLUGIN(obj)                                     \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), window_plus_plugin_get_type(), \
@@ -22,7 +29,6 @@ struct _WindowPlusPlugin {
   GObject parent_instance;
   FlPluginRegistrar* registrar;
   FlMethodChannel* channel;
-  GdkGeometry window_geometry;
 };
 
 G_DEFINE_TYPE(WindowPlusPlugin, window_plus_plugin, g_object_get_type())
@@ -36,7 +42,6 @@ static gboolean delete_event(GtkWidget* self, GdkEvent* event,
   return TRUE;
 }
 
-// Called when a method call is received from Flutter.
 static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                                                   FlMethodCall* method_call) {
   g_autoptr(FlMethodResponse) response = nullptr;
@@ -45,21 +50,14 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     g_signal_connect(window, "delete_event", G_CALLBACK(delete_event), self);
-    // Configure minimum & initial |window| size.
-    GdkRectangle workarea = {0};
-    GdkDisplay* default_display = gdk_display_get_default();
-    GdkMonitor* primary_monitor =
-        gdk_display_get_primary_monitor(default_display);
-    gdk_monitor_get_workarea(primary_monitor, &workarea);
-    gboolean hd = workarea.width > 1366 && workarea.height > 768;
-    gint base_width = hd ? 1280 : 1024, base_height = hd ? 720 : 640;
-    gtk_window_set_default_size(window, base_width, base_height);
+    // Configure minimum size.
+    gtk_window_set_default_size(window, kWindowDefaultWidth,
+                                kWindowDefaultHeight);
     GdkGeometry geometry;
-    // TODO (@alexmercerind): Expose in public API.
-    geometry.min_width = 1024;
-    geometry.min_height = 640;
-    geometry.base_width = base_width;
-    geometry.base_height = base_height;
+    geometry.min_width = kWindowDefaultMinimumWidth;
+    geometry.min_height = kWindowDefaultMinimumHeight;
+    geometry.base_width = kWindowDefaultWidth;
+    geometry.base_height = kWindowDefaultHeight;
     gtk_window_set_geometry_hints(
         window, GTK_WIDGET(window), &geometry,
         static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE));
@@ -86,35 +84,63 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
             fl_value_lookup_string(saved_window_state, "height"));
         gint maximized = fl_value_get_bool(
             fl_value_lookup_string(saved_window_state, "maximized"));
-        workarea.x += kMonitorSafeArea;
-        workarea.y += kMonitorSafeArea;
-        workarea.width -= kMonitorSafeArea;
-        workarea.height -= kMonitorSafeArea;
-        // If |window| was |maximized|, then maximize it & set restore position
-        // to center with default size.
+        // If |window| was |maximized|, then maximize it & set restore window
+        // position to the center of the workspace with default size.
         if (maximized) {
-          gtk_window_maximize(window);
+          gtk_window_resize(window, width, height);
           gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+          gtk_window_maximize(window);
         } else {
-          // If the window is within the |workarea| |GdkRectangle|, then restore
-          // it to that position. Otherwise, restore it to the center of the
-          // |workarea|.
-          if (x >= workarea.x && x <= workarea.width && y >= workarea.y &&
-              y <= workarea.height) {
-            gtk_window_move(window, x, y);
+          // If the |window| is present within bounds of any of the monitor(s),
+          // then restore the |window| to the saved position & size.
+          gboolean is_within_monitor = FALSE;
+          GdkDisplay* display = gdk_display_get_default();
+          gint n_monitors = gdk_display_get_n_monitors(display);
+          for (gint i = 0; i < n_monitors; i++) {
+            GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+            GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+            gdk_monitor_get_workarea(monitor, &workarea);
+            gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                                 workarea.width == 0 && workarea.height == 0);
+            if (success) {
+              std::cout << "GdkRectangle{ " << workarea.x << ", " << workarea.y
+                        << ", " << workarea.width << ", " << workarea.height
+                        << " }" << std::endl;
+              if (!is_within_monitor) {
+                std::cout << "GtkWindow within bounds." << std::endl;
+                gint monitor_left = workarea.x, monitor_top = workarea.y,
+                     monitor_right = workarea.x + workarea.width,
+                     monitor_bottom = workarea.y + workarea.height;
+                monitor_left += kMonitorSafeArea;
+                monitor_top += kMonitorSafeArea;
+                monitor_right -= kMonitorSafeArea;
+                monitor_bottom -= kMonitorSafeArea;
+                if (x > monitor_left && x + width < monitor_right &&
+                    y > monitor_top && y + height < monitor_bottom) {
+                  is_within_monitor = TRUE;
+                }
+              }
+            }
+          }
+          if (is_within_monitor) {
             gtk_window_resize(window, width, height);
+            gtk_window_move(window, x, y);
           } else {
+            // Not present within bounds, center with the already saved &
+            // available |height| & |width| values.
+            gtk_window_resize(window, width, height);
             gtk_window_set_position(window, GTK_WIN_POS_CENTER);
           }
         }
       } else {
-        // No saved state. Restore window to the center of the |workarea|.
+        // No saved state. Restore window to the center of the workarea.
         gtk_window_set_position(window, GTK_WIN_POS_CENTER);
       }
     } catch (...) {
-      // No saved state. Restore window to the center of the |workarea|.
+      // No saved state. Restore window to the center of the workarea.
       gtk_window_set_position(window, GTK_WIN_POS_CENTER);
     }
+    // Show the Flutter |view| & |window|.
     gtk_widget_show(GTK_WIDGET(view));
     gtk_widget_show(GTK_WIDGET(window));
     int64_t result = reinterpret_cast<int64_t>(window);
@@ -124,10 +150,28 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     gint x = -1, y = -1, width = -1, height = -1;
-    gtk_window_get_position(window, &x, &y);
-    gtk_window_get_size(window, &width, &height);
     gboolean maximized = gtk_window_is_maximized(window);
+    if (!maximized) {
+      // Current |window| position & size.
+      gtk_window_get_position(window, &x, &y);
+      gtk_window_get_size(window, &width, &height);
+    } else {
+      // Already cached |window| position & size, sent from Dart side.
+      FlValue* arguments = fl_method_call_get_args(method_call);
+      FlValue* saved_window_state =
+          fl_value_lookup_string(arguments, "savedWindowState");
+      if (fl_value_get_type(saved_window_state) == FL_VALUE_TYPE_MAP) {
+        x = fl_value_get_int(fl_value_lookup_string(saved_window_state, "x"));
+        y = fl_value_get_int(fl_value_lookup_string(saved_window_state, "y"));
+        width = fl_value_get_int(
+            fl_value_lookup_string(saved_window_state, "width"));
+        height = fl_value_get_int(
+            fl_value_lookup_string(saved_window_state, "height"));
+      }
+    }
     auto result = fl_value_new_map();
+    // NOTE: Use existing cached |x|, |y|, |width| & |height| values if
+    // |maximized| is `TRUE` i.e. sent from Dart side.
     fl_value_set_string_take(result, "x", fl_value_new_int(x));
     fl_value_set_string_take(result, "y", fl_value_new_int(y));
     fl_value_set_string_take(result, "width", fl_value_new_int(width));

@@ -78,7 +78,12 @@ class WindowState {
         debugPrint(result.toString());
       }
     } else {
-      final result = await channel.invokeMethod(kGetStateMethodName, {});
+      final result = await channel.invokeMethod(
+        kGetStateMethodName,
+        {
+          'savedWindowState': (await savedWindowState)?.toJson(),
+        },
+      );
       final state = Map<String, dynamic>.from(result);
       await storage?.write(state);
       debugPrint(state.toString());
