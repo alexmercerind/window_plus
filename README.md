@@ -12,6 +12,7 @@ As it should be.
 - [ ] Programmatic maximize, restore, size, move, close & destroy.
 - [ ] Customizable minimum window size.
 - [x] Multiple monitor(s) compatibility.
+- [ ] Single instance support & argument vector (`List<String> args`) forwarding.
 - [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
 
 ## Docs
