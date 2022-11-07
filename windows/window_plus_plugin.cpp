@@ -445,6 +445,13 @@ void WindowPlusPlugin::HandleMethodCall(
           ::SetWindowPos(GetWindow(), nullptr, x, y, width, height, 0);
         } else {
           auto monitor = GetMonitorRect(true);
+          // If |width| or |height| exceeds the monitor size, then use the
+          // |kWindowDefaultWidth| & |kWindowDefaultHeight|.
+          width = width > (monitor.right - monitor.left) ? kWindowDefaultWidth
+                                                         : width;
+          height = height > (monitor.bottom - monitor.top)
+                       ? kWindowDefaultHeight
+                       : height;
           ::SetWindowPos(
               GetWindow(), nullptr,
               monitor.left + (monitor.right - monitor.left) / 2 - width / 2,
