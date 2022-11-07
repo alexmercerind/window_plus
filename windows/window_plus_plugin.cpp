@@ -434,9 +434,9 @@ void WindowPlusPlugin::HandleMethodCall(
           info.rcWork.right -= safe_area;
           info.rcWork.bottom -= safe_area;
           if (!is_within_monitor) {
-            std::cout << "HWND within bounds." << std::endl;
             if (x > info.rcWork.left && x + width < info.rcWork.right &&
                 y > info.rcWork.top && y + height < info.rcWork.bottom) {
+              std::cout << "HWND within bounds." << std::endl;
               is_within_monitor = true;
             }
           }

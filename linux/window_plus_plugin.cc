@@ -33,6 +33,15 @@ struct _WindowPlusPlugin {
 
 G_DEFINE_TYPE(WindowPlusPlugin, window_plus_plugin, g_object_get_type())
 
+static GdkPoint get_cursor_position() {
+  GdkDisplay* display = gdk_display_get_default();
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  GdkPoint position = GdkPoint{0, 0};
+  gdk_device_get_position(device, NULL, &position.x, &position.y);
+  return position;
+}
+
 static gboolean delete_event(GtkWidget* self, GdkEvent* event,
                              gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
@@ -84,12 +93,33 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
             fl_value_lookup_string(saved_window_state, "height"));
         gint maximized = fl_value_get_bool(
             fl_value_lookup_string(saved_window_state, "maximized"));
-        // If |window| was |maximized|, then maximize it & set restore window
-        // position to the center of the workspace with default size.
+        // If |window| was |maximized|, then restore the |window|'s size only &
+        // make it maximized. Thus, state restored.
+        // Also, make sure to clamp ignore |width| & |height| if they exceed the
+        // current workarea dimensions and use |kWindowDefaultWidth| &
+        // |kWindowDefaultHeight| instead.
         if (maximized) {
-          gtk_window_resize(window, width, height);
-          gtk_window_set_position(window, GTK_WIN_POS_CENTER);
-          gtk_window_maximize(window);
+          GdkPoint cursor = get_cursor_position();
+          GdkDisplay* display = gdk_display_get_default();
+          GdkMonitor* monitor =
+              gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+          GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+          gdk_monitor_get_workarea(monitor, &workarea);
+          gint monitor_left = workarea.x, monitor_top = workarea.y,
+               monitor_right = workarea.x + workarea.width,
+               monitor_bottom = workarea.y + workarea.height;
+          gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                               workarea.width == 0 && workarea.height == 0);
+          if (success) {
+            width = width > workarea.width ? kWindowDefaultWidth : width;
+            height = height > workarea.height ? kWindowDefaultHeight : height;
+            gtk_window_resize(window, width, height);
+            gtk_window_move(
+                window,
+                monitor_left + (monitor_right - monitor_left) / 2 - width / 2,
+                monitor_top + (monitor_bottom - monitor_top) / 2 - height / 2);
+            gtk_window_maximize(window);
+          }
         } else {
           // If the |window| is present within bounds of any of the monitor(s),
           // then restore the |window| to the saved position & size.
@@ -107,7 +137,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                         << ", " << workarea.width << ", " << workarea.height
                         << " }" << std::endl;
               if (!is_within_monitor) {
-                std::cout << "GtkWindow within bounds." << std::endl;
                 gint monitor_left = workarea.x, monitor_top = workarea.y,
                      monitor_right = workarea.x + workarea.width,
                      monitor_bottom = workarea.y + workarea.height;
@@ -117,6 +146,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                 monitor_bottom -= kMonitorSafeArea;
                 if (x > monitor_left && x + width < monitor_right &&
                     y > monitor_top && y + height < monitor_bottom) {
+                  std::cout << "GtkWindow within bounds." << std::endl;
                   is_within_monitor = TRUE;
                 }
               }
@@ -128,17 +158,79 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           } else {
             // Not present within bounds, center with the already saved &
             // available |height| & |width| values.
-            gtk_window_resize(window, width, height);
-            gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+            GdkPoint cursor = get_cursor_position();
+            GdkDisplay* display = gdk_display_get_default();
+            GdkMonitor* monitor =
+                gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+            GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+            gdk_monitor_get_workarea(monitor, &workarea);
+            gint monitor_left = workarea.x, monitor_top = workarea.y,
+                 monitor_right = workarea.x + workarea.width,
+                 monitor_bottom = workarea.y + workarea.height;
+            gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                                 workarea.width == 0 && workarea.height == 0);
+            if (success) {
+              // Make sure to clamp ignore |width| & |height| if they exceed the
+              // current workarea dimensions and use |kWindowDefaultWidth| &
+              // |kWindowDefaultHeight| instead.
+              width = width > workarea.width ? kWindowDefaultWidth : width;
+              height = height > workarea.height ? kWindowDefaultHeight : height;
+              gtk_window_resize(window, width, height);
+              gtk_window_move(
+                  window,
+                  monitor_left + (monitor_right - monitor_left) / 2 - width / 2,
+                  monitor_top + (monitor_bottom - monitor_top) / 2 -
+                      height / 2);
+            }
           }
         }
       } else {
         // No saved state. Restore window to the center of the workarea.
-        gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+        // Not present within bounds, center with the already saved &
+        // available |height| & |width| values.
+        GdkPoint cursor = get_cursor_position();
+        GdkDisplay* display = gdk_display_get_default();
+        GdkMonitor* monitor =
+            gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+        GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+        gdk_monitor_get_workarea(monitor, &workarea);
+        gint monitor_left = workarea.x, monitor_top = workarea.y,
+             monitor_right = workarea.x + workarea.width,
+             monitor_bottom = workarea.y + workarea.height;
+        gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                             workarea.width == 0 && workarea.height == 0);
+        if (success) {
+          gtk_window_resize(window, kWindowDefaultWidth, kWindowDefaultHeight);
+          gtk_window_move(window,
+                          monitor_left + (monitor_right - monitor_left) / 2 -
+                              kWindowDefaultWidth / 2,
+                          monitor_top + (monitor_bottom - monitor_top) / 2 -
+                              kWindowDefaultHeight / 2);
+        }
       }
     } catch (...) {
       // No saved state. Restore window to the center of the workarea.
-      gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+      // Not present within bounds, center with the already saved &
+      // available |height| & |width| values.
+      GdkPoint cursor = get_cursor_position();
+      GdkDisplay* display = gdk_display_get_default();
+      GdkMonitor* monitor =
+          gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+      GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+      gdk_monitor_get_workarea(monitor, &workarea);
+      gint monitor_left = workarea.x, monitor_top = workarea.y,
+           monitor_right = workarea.x + workarea.width,
+           monitor_bottom = workarea.y + workarea.height;
+      gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                           workarea.width == 0 && workarea.height == 0);
+      if (success) {
+        gtk_window_resize(window, kWindowDefaultWidth, kWindowDefaultHeight);
+        gtk_window_move(window,
+                        monitor_left + (monitor_right - monitor_left) / 2 -
+                            kWindowDefaultWidth / 2,
+                        monitor_top + (monitor_bottom - monitor_top) / 2 -
+                            kWindowDefaultHeight / 2);
+      }
     }
     // Show the Flutter |view| & |window|.
     gtk_widget_show(GTK_WIDGET(view));
