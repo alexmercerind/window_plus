@@ -10,7 +10,8 @@ As it should be.
 - [x] Fullscreen support.
 - [ ] Overlay & always on-top support.
 - [ ] Programmatic maximize, restore, size, move, close & destroy.
-- [x] Customizable minimum window size.
+- [ ] Customizable minimum window size.
+- [x] Multiple monitor(s) compatibility.
 - [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
 
 ## Docs
