@@ -32,7 +32,7 @@ class WindowPlusPlugin : public flutter::Plugin {
   WindowPlusPlugin& operator=(const WindowPlusPlugin&) = delete;
 
  private:
-  static constexpr auto kMonitorSafeArea = 36;
+  static constexpr auto kMonitorSafeArea = 8;
   static constexpr auto kWindowDefaultWidth = 1024;
   static constexpr auto kWindowDefaultHeight = 640;
   // TODO (@alexmercerind): Expose in public API.
@@ -43,7 +43,9 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   HWND GetWindow();
 
-  RECT GetMonitorRect();
+  RECT GetMonitorRect(bool use_cursor);
+
+  std::vector<HMONITOR> GetMonitors();
 
   RTL_OSVERSIONINFOW GetWindowsVersion();
 
@@ -84,6 +86,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   int32_t minimum_width_ = kWindowDefaultMinimumWidth;
   int32_t minimum_height_ = kWindowDefaultMinimumHeight;
   bool enable_custom_frame_ = false;
+  // DO NOT ACCESS THIS MEMBER DIRECTLY. Use |GetMonitors| instead.
+  std::vector<HMONITOR> monitors_ = {};
 };
 
 }  // namespace window_plus

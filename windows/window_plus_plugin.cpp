@@ -37,12 +37,31 @@ HWND WindowPlusPlugin::GetWindow() {
   return ::GetAncestor(registrar_->GetView()->GetNativeWindow(), GA_ROOT);
 }
 
-RECT WindowPlusPlugin::GetMonitorRect() {
+RECT WindowPlusPlugin::GetMonitorRect(bool use_cursor) {
   auto info = MONITORINFO{};
   info.cbSize = DWORD(sizeof(MONITORINFO));
-  auto monitor = MonitorFromWindow(GetWindow(), MONITOR_DEFAULTTONEAREST);
-  GetMonitorInfoW(monitor, static_cast<LPMONITORINFO>(&info));
+  HMONITOR monitor = nullptr;
+  if (use_cursor) {
+    POINT cursor;
+    ::GetCursorPos(&cursor);
+    monitor = ::MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
+  } else {
+    monitor = ::MonitorFromWindow(GetWindow(), MONITOR_DEFAULTTONEAREST);
+  }
+  ::GetMonitorInfo(monitor, static_cast<LPMONITORINFO>(&info));
   return info.rcWork;
+}
+
+std::vector<HMONITOR> WindowPlusPlugin::GetMonitors() {
+  monitors_.clear();
+  auto callback = [](HMONITOR monitor, auto, auto, LPARAM data) {
+    auto monitors = reinterpret_cast<std::vector<HMONITOR>*>(data);
+    monitors->emplace_back(monitor);
+    return 1;
+  };
+  ::EnumDisplayMonitors(nullptr, nullptr, callback,
+                        reinterpret_cast<LPARAM>(&monitors_));
+  return monitors_;
 }
 
 RTL_OSVERSIONINFOW WindowPlusPlugin::GetWindowsVersion() {
@@ -72,8 +91,9 @@ bool WindowPlusPlugin::IsWindows10RS1OrGreater() {
 }
 
 bool WindowPlusPlugin::IsFullscreen() {
-  // The fullscreen mode is implemented by removing |WS_OVERLAPPEDWINDOW| style.
-  // So, if the window has |WS_OVERLAPPEDWINDOW| style, it is not in fullscreen.
+  // The fullscreen mode is implemented by removing |WS_OVERLAPPEDWINDOW|
+  // style. So, if the window has |WS_OVERLAPPEDWINDOW| style, it is not in
+  // fullscreen.
   return !(::GetWindowLongPtr(GetWindow(), GWL_STYLE) & WS_OVERLAPPEDWINDOW);
 }
 
@@ -109,8 +129,8 @@ void WindowPlusPlugin::AlignChildContent() {
     auto padding = GetDefaultWindowPadding();
     auto frame = RECT{};
     ::GetClientRect(GetWindow(), &frame);
-    // Make some room at the top, to prevent the shift of the content upon fresh
-    // launch in maximized state.
+    // Make some room at the top, to prevent the shift of the content upon
+    // fresh launch in maximized state.
     ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left,
                  frame.top + padding.y, frame.right - frame.left,
                  frame.bottom - frame.top - padding.y, TRUE);
@@ -164,9 +184,9 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
         top = 0b01000,
         bottom = 0b10000,
       };
-      // Here border values are added/subtracted from the window hitbox to make
-      // resize border lie outside of the actual client area.
-      // The top-border is handled in child Flutter view's proc.
+      // Here border values are added/subtracted from the window hitbox to
+      // make resize border lie outside of the actual client area. The
+      // top-border is handled in child Flutter view's proc.
       const auto result =
           left * (cursor.x < (rect.left + border.x)) |
           right * (cursor.x >= (rect.right - border.x)) |
@@ -202,7 +222,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       auto params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
       // Adjust the window client area, so that content doesn't appear cropped
       // out of the screen, when it is maximized.
-      auto monitor_rect = GetMonitorRect();
+      auto monitor_rect = GetMonitorRect(false);
       if (params->lppos) {
         if ((params->lppos->x < monitor_rect.left) &&
             (params->lppos->y < monitor_rect.top) &&
@@ -210,8 +230,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
             (params->lppos->cy > (monitor_rect.bottom - monitor_rect.top))) {
           params->lppos->x = monitor_rect.left;
           params->lppos->cx = monitor_rect.right - monitor_rect.left;
-          // No need to modify the vertical alignment of the child |HWND| after
-          // |AlignChildContent| implementation has landed.
+          // No need to modify the vertical alignment of the child |HWND|
+          // after |AlignChildContent| implementation has landed.
           // params->lppos->y = monitor_rect.top;
           // params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
         }
@@ -224,8 +244,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
             (params->rgrc[i].bottom > monitor_rect.bottom)) {
           params->rgrc[i].left = monitor_rect.left;
           params->rgrc[i].right = monitor_rect.right;
-          // No need to modify the vertical alignment of the child |HWND| after
-          // |AlignChildContent| implementation has landed.
+          // No need to modify the vertical alignment of the child |HWND|
+          // after |AlignChildContent| implementation has landed.
           // params->rgrc[i].top = monitor_rect.top;
           // params->rgrc[i].bottom = monitor_rect.bottom;
         }
@@ -239,10 +259,10 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
           params->rgrc[0].top -= border.y;
         }
       } else {
-        // In Windows, when window frame (i.e. controls & border) is drawn, the
-        // space of the client is actually reduced to make space for the resize
-        // border (because WM_NCHHITTEST is only received inside client area).
-        // In modern Windows (i.e. 10 or 11), this space actually looks
+        // In Windows, when window frame (i.e. controls & border) is drawn,
+        // the space of the client is actually reduced to make space for the
+        // resize border (because WM_NCHHITTEST is only received inside client
+        // area). In modern Windows (i.e. 10 or 11), this space actually looks
         // transparent, thus it feels like the resize border is outside client
         // area but it is actually not, instead the actual client area size is
         // reduced.
@@ -329,8 +349,8 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
     case WM_NCHITTEST: {
       // This subclass proc is only used to handle the top resize border.
       // This means sending |HTTRANSPARENT| from the child window for the top
-      // region of the window. It will cause the actual parent window to receive
-      // the |WM_NCHITTEST| message and handle |HTTOP|.
+      // region of the window. It will cause the actual parent window to
+      // receive the |WM_NCHITTEST| message and handle |HTTOP|.
       RECT rect;
       ::GetWindowRect(window, &rect);
       POINT cursor{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
@@ -364,9 +384,10 @@ void WindowPlusPlugin::HandleMethodCall(
       ::SetWindowSubclass(registrar_->GetView()->GetNativeWindow(),
                           ChildWindowProc, 1,
                           reinterpret_cast<DWORD_PTR>(this));
-      // |DwmExtendFrameIntoClientArea| is working fine with 0 |MARGINS| because
-      // the window has |WS_OVERLAPPEDWINDOW| style. Calling this causes window
-      // to have black border which makes it feel like a frameless window.
+      // |DwmExtendFrameIntoClientArea| is working fine with 0 |MARGINS|
+      // because the window has |WS_OVERLAPPEDWINDOW| style. Calling this
+      // causes window to have black border which makes it feel like a
+      // frameless window.
       auto margins = MARGINS{0, 0, 0, 0};
       ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
     } else if (!enable_custom_frame_ && window_proc_delegate_id_ == -1) {
@@ -393,24 +414,37 @@ void WindowPlusPlugin::HandleMethodCall(
             std::get<int32_t>(data[flutter::EncodableValue("height")]);
         auto maximized =
             std::get<bool>(data[flutter::EncodableValue("maximized")]);
-        // Get the |monitor| |RECT|.
-        auto monitor = GetMonitorRect();
-        POINT point;
-        point.x = x;
-        point.y = y;
-        auto dpi = FlutterDesktopGetDpiForMonitor(
-            ::MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST));
-        auto scale_factor = dpi / 96.0;
-        monitor.left += static_cast<LONG>(kMonitorSafeArea * scale_factor);
-        monitor.top += static_cast<LONG>(kMonitorSafeArea * scale_factor);
-        monitor.right -= static_cast<LONG>(kMonitorSafeArea * scale_factor);
-        monitor.bottom -= static_cast<LONG>(kMonitorSafeArea * scale_factor);
-        // If the window is within the |monitor| |RECT|, then restore it to
-        // that position. Otherwise, restore it to the center of the |monitor|.
-        if (x >= monitor.left && x <= monitor.right && y >= monitor.top &&
-            y <= monitor.bottom) {
+        // If the window is within any of the available monitor rects, then
+        // alright otherwise, restore it to that position. Otherwise, restore it
+        // to the center of the |monitor|.
+        auto is_within_monitor = false;
+        auto monitors = GetMonitors();
+        for (auto monitor : monitors) {
+          MONITORINFO info;
+          info.cbSize = sizeof(MONITORINFO);
+          ::GetMonitorInfo(monitor, &info);
+          std::cout << "RECT{ " << info.rcWork.left << ", " << info.rcWork.top
+                    << ", " << info.rcWork.right << ", " << info.rcWork.bottom
+                    << " }" << std::endl;
+          auto dpi = FlutterDesktopGetDpiForMonitor(monitor);
+          auto scale_factor = dpi / 96.0;
+          auto safe_area = static_cast<LONG>(kMonitorSafeArea * scale_factor);
+          info.rcWork.left += safe_area;
+          info.rcWork.top += safe_area;
+          info.rcWork.right -= safe_area;
+          info.rcWork.bottom -= safe_area;
+          if (!is_within_monitor) {
+            std::cout << "HWND within bounds." << std::endl;
+            if (x > info.rcWork.left && x + width < info.rcWork.right &&
+                y > info.rcWork.top && y + height < info.rcWork.bottom) {
+              is_within_monitor = true;
+            }
+          }
+        }
+        if (is_within_monitor) {
           ::SetWindowPos(GetWindow(), nullptr, x, y, width, height, 0);
         } else {
+          auto monitor = GetMonitorRect(true);
           ::SetWindowPos(
               GetWindow(), nullptr,
               monitor.left + (monitor.right - monitor.left) / 2 - width / 2,
@@ -420,8 +454,8 @@ void WindowPlusPlugin::HandleMethodCall(
         ::ShowWindow(GetWindow(), maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
       } else {
         // No saved window state, so restore the window to the center of the
-        // |monitor|.
-        auto monitor = GetMonitorRect();
+        // |monitor| where the cursor is present.
+        auto monitor = GetMonitorRect(true);
         ::SetWindowPos(GetWindow(), nullptr,
                        monitor.left + (monitor.right - monitor.left) / 2 -
                            kWindowDefaultWidth / 2,
@@ -433,8 +467,8 @@ void WindowPlusPlugin::HandleMethodCall(
     } catch (...) {
       // Typically, an instance of |std::bad_variant_access| will be received.
       // No saved window state, so restore the window to the center of the
-      // |monitor|.
-      auto monitor = GetMonitorRect();
+      // |monitor| where the cursor is present.
+      auto monitor = GetMonitorRect(true);
       ::SetWindowPos(GetWindow(), nullptr,
                      monitor.left + (monitor.right - monitor.left) / 2 -
                          kWindowDefaultWidth / 2,
