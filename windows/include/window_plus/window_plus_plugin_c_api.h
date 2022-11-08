@@ -23,6 +23,9 @@ extern "C" {
 FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
 
+FLUTTER_PLUGIN_EXPORT void WindowPlusPluginCApiHandleSingleInstance(
+    const wchar_t class_name[], const wchar_t window_name[]);
+
 #if defined(__cplusplus)
 }  // extern "C"
 #endif

@@ -16,9 +16,13 @@ static constexpr auto kNotifyFirstFrameRasterizedMethodName =
     "notifyFirstFrameRasterized";
 static constexpr auto kWindowMovedMethodName = "windowMoved";
 static constexpr auto kWindowResizedMethodName = "windowResized";
-
+static constexpr auto kSingleInstanceDataReceivedMethodName =
+    "singleInstanceDataReceived";
 static constexpr auto kWindows10RTM = 10240;
 static constexpr auto kWindows10RS1 = 14393;
+
+// The default window class as present in un-changed Flutter runner template.
+static constexpr auto kDefaultWindowClassName = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
 #define WM_CAPTIONAREA (WM_USER + 0x0009)
 
