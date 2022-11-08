@@ -402,11 +402,13 @@ class MouseStateBuilderState extends State<MouseStateBuilder> {
 }
 
 class WindowCaption extends StatefulWidget {
+  final Widget? child;
   final Brightness? brightness;
   // Force re-rendering when the window is maximized or restored.
   // ignore: prefer_const_constructors_in_immutables
   WindowCaption({
     Key? key,
+    this.child,
     this.brightness,
   }) : super(key: key);
 
@@ -425,10 +427,13 @@ class _WindowCaptionState extends State<WindowCaption> {
               data: Theme.of(context).copyWith(brightness: widget.brightness),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: WindowCaptionArea(),
+                    child: WindowCaptionArea(
+                      height: WindowPlus.instance.captionHeight,
+                      child: widget.child,
+                    ),
                   ),
                   WindowMinimizeButton(),
                   WindowRestoreMaximizeButton(),
