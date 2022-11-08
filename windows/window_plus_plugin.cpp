@@ -153,6 +153,10 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                             WPARAM wparam,
                                                             LPARAM lparam) {
   switch (message) {
+    case WM_COPYDATA: {
+      SendSingleInstanceData(lparam);
+      break;
+    }
     case WM_GETMINMAXINFO: {
       auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       if (minimum_width_ != -1 && minimum_height_ != -1) {
@@ -326,6 +330,10 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
 std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
   switch (message) {
+    case WM_COPYDATA: {
+      SendSingleInstanceData(lparam);
+      break;
+    }
     case WM_GETMINMAXINFO: {
       auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       if (minimum_width_ != -1 && minimum_height_ != -1) {
@@ -396,6 +404,29 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
     }
   }
   return DefSubclassProc(window, message, wparam, lparam);
+}
+
+void WindowPlusPlugin::SendSingleInstanceData(LPARAM lparam) {
+  auto copy_data_struct = reinterpret_cast<COPYDATASTRUCT*>(lparam);
+  if (copy_data_struct->dwData == 1) {
+    auto size = copy_data_struct->cbData;
+    if (size) {
+      auto data = reinterpret_cast<char*>(copy_data_struct->lpData);
+      auto encoded_data = std::string{data, size};
+      std::cout << encoded_data << std::endl;
+      auto result = std::vector<flutter::EncodableValue>{};
+      result.emplace_back(flutter::EncodableValue(encoded_data));
+      channel_->InvokeMethod(kSingleInstanceDataReceivedMethodName,
+                             std::make_unique<flutter::EncodableValue>(result),
+                             nullptr);
+    } else {
+      std::cout << "nullptr" << std::endl;
+      channel_->InvokeMethod(kSingleInstanceDataReceivedMethodName,
+                             std::make_unique<flutter::EncodableValue>(
+                                 std::vector<flutter::EncodableValue>{}),
+                             nullptr);
+    }
+  }
 }
 
 void WindowPlusPlugin::HandleMethodCall(

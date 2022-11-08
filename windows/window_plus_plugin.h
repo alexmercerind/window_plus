@@ -73,6 +73,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
                                  LPARAM lparam, UINT_PTR id, DWORD_PTR data);
 
+  void SendSingleInstanceData(LPARAM lparam);
+
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
