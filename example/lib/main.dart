@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:window_plus/window_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -80,22 +81,51 @@ class _MyAppState extends State<MyApp> {
       home: LayoutBuilder(
         builder: (context, _) {
           return Scaffold(
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => launchUrl(
+                Uri.https(
+                  'github.com',
+                  '/sponsors/alexmercerind',
+                ),
+              ),
+              backgroundColor: Colors.pink.shade100,
+              foregroundColor: Colors.pink.shade400,
+              tooltip: 'Sponsor',
+              child: const Icon(
+                Icons.favorite,
+              ),
+            ),
             body: Stack(
               alignment: Alignment.topCenter,
               children: [
                 CustomScrollView(
                   slivers: [
-                    const SliverAppBar(
+                    SliverAppBar(
                       flexibleSpace: FlexibleSpaceBar(
-                        title: Text('package:window_plus'),
+                        title: const Text('package:window_plus'),
+                        background: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(left: 64.0),
+                          height: 200.0,
+                          width: MediaQuery.of(context).size.width,
+                          child: Transform.translate(
+                            offset: const Offset(-156.0, -96.0),
+                            child: Icon(
+                              Icons.window,
+                              size: 256.0,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
                       ),
                       elevation: 4.0,
+                      collapsedHeight: 72.0,
                       expandedHeight: 200.0,
                       pinned: true,
                       floating: true,
                       snap: false,
                       forceElevated: true,
-                      bottom: PreferredSize(
+                      bottom: const PreferredSize(
                         preferredSize: Size.fromHeight(kToolbarHeight),
                         child: SizedBox.shrink(),
                       ),
@@ -169,6 +199,12 @@ class _MyAppState extends State<MyApp> {
                                             : Text(
                                                 'savedWindowState: ${snapshot.data}',
                                               ),
+                                  ),
+                                  Text(
+                                    'position: ${WindowPlus.instance.position}',
+                                  ),
+                                  Text(
+                                    'size: ${WindowPlus.instance.size}',
                                   ),
                                 ],
                               ),

@@ -146,6 +146,42 @@ class WindowPlus extends WindowState {
     return false;
   }
 
+  /// Gets the position of the window on the screen.
+  Offset get position {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      final rect = calloc<RECT>();
+      GetWindowRect(hwnd, rect);
+      final result = Offset(
+        rect.ref.left.toDouble(),
+        rect.ref.top.toDouble(),
+      );
+      calloc.free(rect);
+      return result;
+    }
+    // TODO: Missing implementation.
+    return Offset.zero;
+  }
+
+  /// Gets the size of the window on the screen.
+  Rect get size {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      final rect = calloc<RECT>();
+      GetClientRect(hwnd, rect);
+      final result = Rect.fromLTRB(
+        rect.ref.left.toDouble(),
+        rect.ref.top.toDouble(),
+        rect.ref.right.toDouble(),
+        rect.ref.bottom.toDouble(),
+      );
+      calloc.free(rect);
+      return result;
+    }
+    // TODO: Missing implementation.
+    return Rect.zero;
+  }
+
   /// This method must be called before [ensureInitialized].
   ///
   /// Sets a function to handle window close events.
@@ -386,6 +422,56 @@ class WindowPlus extends WindowState {
       );
     } else {
       return channel.invokeMethod<void>(kDestroyMethodName, {});
+    }
+  }
+
+  /// Moves (or sets position of the window) holding Flutter view on the screen.
+  Future<void> move(int x, int y) async {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      SetWindowPos(
+        hwnd,
+        NULL,
+        x,
+        y,
+        0,
+        0,
+        SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+      );
+    } else {
+      // TODO: Missing implementation.
+      return channel.invokeMethod<void>(
+        kMoveMethodName,
+        {
+          'x': x,
+          'y': y,
+        },
+      );
+    }
+  }
+
+  /// Resizes (or sets size of the window) holding Flutter view on the screen.
+  Future<void> resize(int width, int height) async {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      SetWindowPos(
+        hwnd,
+        NULL,
+        0,
+        0,
+        width,
+        height,
+        SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+      );
+    } else {
+      // TODO: Missing implementation.
+      return channel.invokeMethod<void>(
+        kResizeMethodName,
+        {
+          'width': width,
+          'height': height,
+        },
+      );
     }
   }
 
