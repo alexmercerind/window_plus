@@ -419,7 +419,8 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
-    return WindowsInfo.instance.isWindows10RS1OrGreater
+    return WindowsInfo.instance.isWindows10RS1OrGreater &&
+            !WindowPlus.instance.fullscreen
         ? SizedBox(
             width: double.infinity,
             height: WindowPlus.instance.captionHeight,
