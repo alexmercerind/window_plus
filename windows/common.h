@@ -20,6 +20,7 @@ static constexpr auto kSingleInstanceDataReceivedMethodName =
     "singleInstanceDataReceived";
 static constexpr auto kWindows10RTM = 10240;
 static constexpr auto kWindows10RS1 = 14393;
+static constexpr auto kWindows10RS5 = 17763;
 
 // The default window class as present in un-changed Flutter runner template.
 static constexpr auto kDefaultWindowClassName = L"FLUTTER_RUNNER_WIN32_WINDOW";

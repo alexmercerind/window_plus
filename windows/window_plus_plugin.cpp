@@ -90,6 +90,11 @@ bool WindowPlusPlugin::IsWindows10RS1OrGreater() {
   return version.dwBuildNumber >= kWindows10RS1;
 }
 
+bool WindowPlusPlugin::IsWindows10RS5OrGreater() {
+  auto version = GetWindowsVersion();
+  return version.dwBuildNumber >= kWindows10RS5;
+}
+
 bool WindowPlusPlugin::IsFullscreen() {
   // The fullscreen mode is implemented by removing |WS_OVERLAPPEDWINDOW|
   // style. So, if the window has |WS_OVERLAPPEDWINDOW| style, it is not in
@@ -363,8 +368,14 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
       }
       return 0;
     }
+    case WM_MOVE: {
+      // Notify Flutter.
+      channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+    }
     case WM_SIZE: {
       AlignChildContent();
+      // Notify Flutter.
+      channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       return 0;
     }
     case WM_WINDOWPOSCHANGING: {
@@ -445,11 +456,18 @@ void WindowPlusPlugin::HandleMethodCall(
                           ChildWindowProc, 1,
                           reinterpret_cast<DWORD_PTR>(this));
       // |DwmExtendFrameIntoClientArea| is working fine with 0 |MARGINS|
-      // because the window has |WS_OVERLAPPEDWINDOW| style. Calling this
-      // causes window to have black border which makes it feel like a
-      // frameless window.
-      auto margins = MARGINS{0, 0, 0, 0};
-      ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
+      // on Windows 10 RS5 or greater (build 17763 or greater), giving a decent
+      // "borderless" look with dark borders.
+      // On lower versions of Windows 10, we need one side to be non-zero, makes
+      // window borderless but still keeps 1 pixel border like other windows.
+      // Windows 11 works perfectly fine with 0 |MARGINS|.
+      if (IsWindows10RS5OrGreater()) {
+        auto margins = MARGINS{0, 0, 0, 0};
+        ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
+      } else {
+        auto margins = MARGINS{0, 0, 0, 1};
+        ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
+      }
     } else if (!enable_custom_frame_ && window_proc_delegate_id_ == -1) {
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::FallbackWindowProcDelegate, this,
