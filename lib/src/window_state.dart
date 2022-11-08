@@ -108,7 +108,7 @@ class WindowState {
             throw WindowsException(hr);
           }
           return join(
-            canonicalize(result.value.toDartString()),
+            normalize(result.value.toDartString()),
             application,
             'WindowState.JSON',
           );

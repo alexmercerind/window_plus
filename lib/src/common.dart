@@ -15,6 +15,8 @@ const String kCloseMethodName = 'close';
 const String kDestroyMethodName = 'destroy';
 const String kSetIsFullscreenMethodName = 'setIsFullscreen';
 const String kWindowCloseReceivedMethodName = 'windowCloseReceived';
+const String kNotifyFirstFrameRasterizedMethodName =
+    'notifyFirstFrameRasterized';
 
 const String kCaptionHeightKey = 'captionHeight';
 const String kHwndKey = 'hwnd';

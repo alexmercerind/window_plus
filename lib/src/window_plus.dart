@@ -10,7 +10,7 @@ import 'dart:async';
 import 'dart:ffi' hide Size;
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/models/saved_window_state.dart';
@@ -104,6 +104,15 @@ class WindowPlus extends WindowState {
     debugPrint(_instance?.captionPadding.toString());
     debugPrint(_instance?.captionHeight.toString());
     debugPrint(_instance?.captionButtonSize.toString());
+    // Show the actual window once the first frame is rasterized.
+    WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
+      _instance?.channel.invokeMethod(
+        kNotifyFirstFrameRasterizedMethodName,
+        {
+          'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
+        },
+      );
+    });
   }
 
   /// Whether the window is minimized.
@@ -228,8 +237,6 @@ class WindowPlus extends WindowState {
         );
         calloc.free(placement);
         calloc.free(monitor);
-        // calloc.free(flutterWindowClassName);
-        // calloc.free(rect);
       }
       // Restore to original state.
       else if (!enabled) {
@@ -283,7 +290,9 @@ class WindowPlus extends WindowState {
             rect.ref.left,
             rect.ref.top + shift,
             rect.ref.right - rect.ref.left,
-            rect.ref.bottom - rect.ref.top - shift,
+            rect.ref.bottom -
+                rect.ref.top -
+                (maximized && !fullscreen ? 2 : 1) * shift,
             SWP_FRAMECHANGED,
           );
           calloc.free(flutterWindowClassName);
