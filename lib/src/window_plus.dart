@@ -71,8 +71,17 @@ class WindowPlus extends WindowState {
     _instance?._enableCustomFrame =
         enableCustomFrame ?? WindowsInfo.instance.isWindows10RS1OrGreater;
     _instance?.channel.setMethodCallHandler((call) async {
-      debugPrint(call.method);
       switch (call.method) {
+        case kWindowMovedMethodName:
+          {
+            _instance?._position.add(_instance!.position);
+            break;
+          }
+        case kWindowResizedMethodName:
+          {
+            _instance?._size.add(_instance!.size);
+            break;
+          }
         case kWindowCloseReceivedMethodName:
           {
             // Save the window state before closing the window.
@@ -181,6 +190,12 @@ class WindowPlus extends WindowState {
     // TODO: Missing implementation.
     return Rect.zero;
   }
+
+  /// Current window position.
+  late final Stream<Offset> positionStream = _position.stream;
+
+  /// Current window size.
+  late final Stream<Rect> sizeStream = _size.stream;
 
   /// This method must be called before [ensureInitialized].
   ///
@@ -546,4 +561,7 @@ class WindowPlus extends WindowState {
   /// This may be used to intercept the event and prevent the window from closing.
   ///
   static Future<bool> Function()? _windowCloseHandler;
+
+  final StreamController<Offset> _position = StreamController.broadcast();
+  final StreamController<Rect> _size = StreamController.broadcast();
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:window_plus/window_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -192,25 +194,42 @@ class _MyAppState extends State<MyApp> {
                                     future:
                                         WindowPlus.instance.savedWindowState,
                                     builder: (context, snapshot) =>
-                                        !snapshot.hasData
+                                        snapshot.hasData
                                             ? Text(
                                                 'savedWindowState: ${snapshot.data.toString()}',
                                               )
-                                            : Text(
-                                                'savedWindowState: ${snapshot.data}',
+                                            : const Text(
+                                                'savedWindowState: null',
                                               ),
                                   ),
-                                  Text(
-                                    'position: ${WindowPlus.instance.position}',
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        snapshot.hasData
+                                            ? Text(
+                                                'size: ${snapshot.data.toString()}',
+                                              )
+                                            : const Text(
+                                                'size: null',
+                                              ),
+                                    stream: WindowPlus.instance.sizeStream,
                                   ),
-                                  Text(
-                                    'size: ${WindowPlus.instance.size}',
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        snapshot.hasData
+                                            ? Text(
+                                                'position: ${snapshot.data.toString()}',
+                                              )
+                                            : const Text(
+                                                'position: null',
+                                              ),
+                                    stream: WindowPlus.instance.positionStream,
                                   ),
                                 ],
                               ),
                               const SizedBox(width: 16.0),
                             ],
                           ),
+                          const SizedBox(height: 16.0),
                         ],
                       ),
                     ),
