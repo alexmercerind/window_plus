@@ -131,9 +131,13 @@ void WindowPlusPlugin::AlignChildContent() {
     ::GetClientRect(GetWindow(), &frame);
     // Make some room at the top, to prevent the shift of the content upon
     // fresh launch in maximized state.
+    // Some additional reduction from bottom is needed in maximized state and
+    // NOT in fullscreen state.
+    auto bottom_clip =
+        (::IsZoomed(GetWindow()) && !IsFullscreen() ? 2 : 1) * padding.y;
     ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left,
                  frame.top + padding.y, frame.right - frame.left,
-                 frame.bottom - frame.top - padding.y, TRUE);
+                 frame.bottom - frame.top - bottom_clip, TRUE);
   } else {
     // No need to do this, if the custom frame is disabled.
     auto frame = RECT{};
@@ -150,11 +154,12 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                             LPARAM lparam) {
   switch (message) {
     case WM_GETMINMAXINFO: {
-      auto info = (LPMINMAXINFO)lparam;
+      auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       if (minimum_width_ != -1 && minimum_height_ != -1) {
         info->ptMinTrackSize.x = minimum_width_;
         info->ptMinTrackSize.y = minimum_height_;
       }
+      return 0;
     }
     case WM_ERASEBKGND: {
       return 1;
@@ -236,7 +241,6 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
           // params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
         }
       }
-      // I have no idea why this |for| loop exists but whatever.
       for (int i = 0; i < 3; i++) {
         if ((params->rgrc[i].left < monitor_rect.left) &&
             (params->rgrc[i].top < monitor_rect.top) &&
@@ -253,10 +257,14 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       // Handle the window in restored state.
       const POINT border = GetDefaultWindowPadding();
       if (::IsZoomed(GetWindow())) {
-        params->rgrc[0].top -= 1;
+        for (int i = 0; i < 3; i++) {
+          params->rgrc[i].top -= 1;
+        }
         // Post |AlignChildContent| implementation.
         if (IsFullscreen()) {
-          params->rgrc[0].top -= border.y;
+          for (int i = 0; i < 3; i++) {
+            params->rgrc[i].top -= border.y;
+          }
         }
       } else {
         // In Windows, when window frame (i.e. controls & border) is drawn,
@@ -298,6 +306,13 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       AlignChildContent();
       return 0;
     }
+    case WM_WINDOWPOSCHANGING: {
+      auto window_position = reinterpret_cast<WINDOWPOS*>(lparam);
+      if (!first_frame_rasterized_) {
+        window_position->flags &= ~SWP_SHOWWINDOW;
+      }
+      break;
+    }
   }
   return std::nullopt;
 }
@@ -306,11 +321,12 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
   switch (message) {
     case WM_GETMINMAXINFO: {
-      auto info = (LPMINMAXINFO)lparam;
+      auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       if (minimum_width_ != -1 && minimum_height_ != -1) {
         info->ptMinTrackSize.x = minimum_width_;
         info->ptMinTrackSize.y = minimum_height_;
       }
+      return 0;
     }
     case WM_ERASEBKGND: {
       return 1;
@@ -336,6 +352,13 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     case WM_SIZE: {
       AlignChildContent();
       return 0;
+    }
+    case WM_WINDOWPOSCHANGING: {
+      auto window_position = reinterpret_cast<WINDOWPOS*>(lparam);
+      if (!first_frame_rasterized_) {
+        window_position->flags &= ~SWP_SHOWWINDOW;
+      }
+      break;
     }
   }
   return std::nullopt;
@@ -412,8 +435,9 @@ void WindowPlusPlugin::HandleMethodCall(
         auto width = std::get<int32_t>(data[flutter::EncodableValue("width")]);
         auto height =
             std::get<int32_t>(data[flutter::EncodableValue("height")]);
-        auto maximized =
-            std::get<bool>(data[flutter::EncodableValue("maximized")]);
+        // UNUSED:
+        // auto maximized =
+        //     std::get<bool>(data[flutter::EncodableValue("maximized")]);
         // If the window is within any of the available monitor rects, then
         // alright otherwise, restore it to that position. Otherwise, restore it
         // to the center of the |monitor|.
@@ -458,7 +482,6 @@ void WindowPlusPlugin::HandleMethodCall(
               monitor.top + (monitor.bottom - monitor.top) / 2 - height / 2,
               width, height, 0);
         }
-        ::ShowWindow(GetWindow(), maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
       } else {
         // No saved window state, so restore the window to the center of the
         // |monitor| where the cursor is present.
@@ -469,7 +492,6 @@ void WindowPlusPlugin::HandleMethodCall(
                        monitor.top + (monitor.bottom - monitor.top) / 2 -
                            kWindowDefaultHeight / 2,
                        kWindowDefaultWidth, kWindowDefaultHeight, 0);
-        ::ShowWindow(GetWindow(), SW_NORMAL);
       }
     } catch (...) {
       // Typically, an instance of |std::bad_variant_access| will be received.
@@ -482,10 +504,30 @@ void WindowPlusPlugin::HandleMethodCall(
                      monitor.top + (monitor.bottom - monitor.top) / 2 -
                          kWindowDefaultHeight / 2,
                      kWindowDefaultWidth, kWindowDefaultHeight, 0);
-      ::ShowWindow(GetWindow(), SW_NORMAL);
     }
     result->Success(
         flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow())));
+  } else if (method_call.method_name().compare(
+                 kNotifyFirstFrameRasterizedMethodName) == 0) {
+    first_frame_rasterized_ = true;
+    auto arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
+    try {
+      auto saved_window_state =
+          arguments[flutter::EncodableValue("savedWindowState")];
+      if (auto value =
+              std::get_if<flutter::EncodableMap>(&saved_window_state)) {
+        auto data = *value;
+        auto maximized =
+            std::get<bool>(data[flutter::EncodableValue("maximized")]);
+        ::ShowWindow(GetWindow(), maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+      } else {
+        ::ShowWindow(GetWindow(), SW_SHOWNORMAL);
+      }
+    } catch (...) {
+      // Typically, an instance of |std::bad_variant_access| will be received.
+      ::ShowWindow(GetWindow(), SW_SHOWNORMAL);
+    }
+    result->Success();
   } else {
     result->NotImplemented();
   }
