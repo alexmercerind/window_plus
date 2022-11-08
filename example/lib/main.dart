@@ -48,6 +48,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  List<String> singleInstanceArguments = <String>[];
+
+  @override
+  void initState() {
+    super.initState();
+    WindowPlus.instance.setSingleInstanceArgumentsHandler((arguments) {
+      setState(() {
+        singleInstanceArguments = arguments;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -112,10 +124,21 @@ class _MyAppState extends State<MyApp> {
                           width: MediaQuery.of(context).size.width,
                           child: Transform.translate(
                             offset: const Offset(-156.0, -96.0),
-                            child: Icon(
-                              Icons.window,
-                              size: 256.0,
-                              color: Colors.white.withOpacity(0.7),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.window,
+                                  size: 256.0,
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                                const SizedBox(width: 32.0),
+                                Icon(
+                                  Icons.desktop_windows,
+                                  size: 256.0,
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -190,18 +213,6 @@ class _MyAppState extends State<MyApp> {
                                   Text(
                                     'captionPadding: ${WindowPlus.instance.captionPadding}',
                                   ),
-                                  FutureBuilder(
-                                    future:
-                                        WindowPlus.instance.savedWindowState,
-                                    builder: (context, snapshot) =>
-                                        snapshot.hasData
-                                            ? Text(
-                                                'savedWindowState: ${snapshot.data.toString()}',
-                                              )
-                                            : const Text(
-                                                'savedWindowState: null',
-                                              ),
-                                  ),
                                   StreamBuilder(
                                     builder: (context, snapshot) =>
                                         snapshot.hasData
@@ -224,7 +235,136 @@ class _MyAppState extends State<MyApp> {
                                               ),
                                     stream: WindowPlus.instance.positionStream,
                                   ),
+                                  FutureBuilder(
+                                    future:
+                                        WindowPlus.instance.savedWindowState,
+                                    builder: (context, snapshot) =>
+                                        snapshot.hasData
+                                            ? Text(
+                                                'savedWindowState: ${snapshot.data.toString()}',
+                                              )
+                                            : const Text(
+                                                'savedWindowState: null',
+                                              ),
+                                  ),
+                                  Text(
+                                    'singleInstanceArguments: $singleInstanceArguments',
+                                  ),
                                 ],
+                              ),
+                              const SizedBox(width: 16.0),
+                            ],
+                          ),
+                          const SizedBox(height: 16.0),
+                          Row(
+                            children: [
+                              const SizedBox(width: 16.0),
+                              TextButton(
+                                onPressed: () async {
+                                  WindowPlus.instance.hide();
+                                  await Future.delayed(
+                                    const Duration(seconds: 2),
+                                  );
+                                  WindowPlus.instance.show();
+                                },
+                                child: const Text('HIDE'),
+                              ),
+                              TextButton(
+                                onPressed: WindowPlus.instance.show,
+                                child: const Text('SHOW'),
+                              ),
+                              const SizedBox(width: 16.0),
+                            ],
+                          ),
+                          const SizedBox(height: 16.0),
+                          Row(
+                            children: [
+                              const SizedBox(width: 16.0),
+                              const SizedBox(
+                                width: 156.0,
+                                child: Text('Window movement :'),
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.move(
+                                  WindowPlus.instance.position.dx ~/ 1 - 10,
+                                  WindowPlus.instance.position.dy ~/ 1,
+                                ),
+                                icon: const Icon(Icons.arrow_back),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.move(
+                                  WindowPlus.instance.position.dx ~/ 1 + 10,
+                                  WindowPlus.instance.position.dy ~/ 1,
+                                ),
+                                icon: const Icon(Icons.arrow_forward),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.move(
+                                  WindowPlus.instance.position.dx ~/ 1,
+                                  WindowPlus.instance.position.dy ~/ 1 - 10,
+                                ),
+                                icon: const Icon(Icons.arrow_upward),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.move(
+                                  WindowPlus.instance.position.dx ~/ 1,
+                                  WindowPlus.instance.position.dy ~/ 1 + 10,
+                                ),
+                                icon: const Icon(Icons.arrow_downward),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const SizedBox(width: 16.0),
+                              const SizedBox(
+                                width: 156.0,
+                                child: Text('Window resize :'),
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.resize(
+                                  WindowPlus.instance.size.width ~/ 1 - 10,
+                                  WindowPlus.instance.size.height ~/ 1,
+                                ),
+                                icon: const Icon(Icons.arrow_back),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.resize(
+                                  WindowPlus.instance.size.width ~/ 1 + 10,
+                                  WindowPlus.instance.size.height ~/ 1,
+                                ),
+                                icon: const Icon(Icons.arrow_forward),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.resize(
+                                  WindowPlus.instance.size.width ~/ 1,
+                                  WindowPlus.instance.size.height ~/ 1 - 10,
+                                ),
+                                icon: const Icon(Icons.arrow_upward),
+                                splashRadius: 20.0,
+                              ),
+                              const SizedBox(width: 16.0),
+                              IconButton(
+                                onPressed: () => WindowPlus.instance.resize(
+                                  WindowPlus.instance.size.width ~/ 1,
+                                  WindowPlus.instance.size.height ~/ 1 + 10,
+                                ),
+                                icon: const Icon(Icons.arrow_downward),
+                                splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                             ],

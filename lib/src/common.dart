@@ -19,6 +19,8 @@ const String kSetIsFullscreenMethodName = 'setIsFullscreen';
 const String kWindowMovedMethodName = 'windowMoved';
 const String kWindowResizedMethodName = 'windowResized';
 const String kWindowCloseReceivedMethodName = 'windowCloseReceived';
+const String kSingleInstanceDataReceivedMethodName =
+    'singleInstanceDataReceived';
 const String kNotifyFirstFrameRasterizedMethodName =
     'notifyFirstFrameRasterized';
 

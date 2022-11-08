@@ -74,12 +74,22 @@ class WindowPlus extends WindowState {
       switch (call.method) {
         case kWindowMovedMethodName:
           {
-            _instance?._position.add(_instance!.position);
+            try {
+              _instance?._position.add(_instance!.position);
+            } catch (exception, stacktrace) {
+              debugPrint(exception.toString());
+              debugPrint(stacktrace.toString());
+            }
             break;
           }
         case kWindowResizedMethodName:
           {
-            _instance?._size.add(_instance!.size);
+            try {
+              _instance?._size.add(_instance!.size);
+            } catch (exception, stacktrace) {
+              debugPrint(exception.toString());
+              debugPrint(stacktrace.toString());
+            }
             break;
           }
         case kWindowCloseReceivedMethodName:
@@ -96,6 +106,18 @@ class WindowPlus extends WindowState {
                 await (_windowCloseHandler?.call() ?? Future.value(true));
             if (destroy) {
               _instance?.destroy();
+            }
+            break;
+          }
+        case kSingleInstanceDataReceivedMethodName:
+          {
+            try {
+              _singleInstanceArgumentsHandler?.call(
+                List<String>.from(call.arguments),
+              );
+            } catch (exception, stacktrace) {
+              debugPrint(exception.toString());
+              debugPrint(stacktrace.toString());
             }
             break;
           }
@@ -177,12 +199,12 @@ class WindowPlus extends WindowState {
     assertEnsureInitialized();
     if (Platform.isWindows) {
       final rect = calloc<RECT>();
-      GetClientRect(hwnd, rect);
+      GetWindowRect(hwnd, rect);
       final result = Rect.fromLTRB(
-        rect.ref.left.toDouble(),
-        rect.ref.top.toDouble(),
-        rect.ref.right.toDouble(),
-        rect.ref.bottom.toDouble(),
+        0,
+        0,
+        rect.ref.right.toDouble() - rect.ref.left.toDouble(),
+        rect.ref.bottom.toDouble() - rect.ref.top.toDouble(),
       );
       calloc.free(rect);
       return result;
@@ -197,8 +219,6 @@ class WindowPlus extends WindowState {
   /// Current window size.
   late final Stream<Rect> sizeStream = _size.stream;
 
-  /// This method must be called before [ensureInitialized].
-  ///
   /// Sets a function to handle window close events.
   /// This may be used to intercept the close event and perform some actions before closing the window
   /// or prevent window from being closed completely.
@@ -235,11 +255,21 @@ class WindowPlus extends WindowState {
   void setWindowCloseHandler(
     Future<bool> Function()? windowCloseHandler,
   ) {
-    assert(
-      _windowCloseHandler == null,
-      '[WindowPlus.setWindowCloseHandler] is already set.',
-    );
     _windowCloseHandler = windowCloseHandler;
+  }
+
+  /// Sets a function to receive the arguments passed to the application when
+  /// single instance is enabled.
+  ///
+  /// This method gets called when the application is opened with single instance
+  /// mode enabled. This may be used to handle the event & receieve the arguments.
+  ///
+  /// **NOTE:**
+  /// Currently only single argument is sent/received.
+  /// However, `List<String>` is used to prevent breaking changes in the future.
+  void setSingleInstanceArgumentsHandler(
+      void Function(List<String>)? singleInstanceArgumentsHandler) {
+    _singleInstanceArgumentsHandler = singleInstanceArgumentsHandler;
   }
 
   /// Enables or disables the fullscreen mode.
@@ -451,7 +481,7 @@ class WindowPlus extends WindowState {
         y,
         0,
         0,
-        SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+        SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER,
       );
     } else {
       // TODO: Missing implementation.
@@ -476,7 +506,7 @@ class WindowPlus extends WindowState {
         0,
         width,
         height,
-        SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
+        SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER,
       );
     } else {
       // TODO: Missing implementation.
@@ -487,6 +517,26 @@ class WindowPlus extends WindowState {
           'height': height,
         },
       );
+    }
+  }
+
+  /// Hides the window holding Flutter view.
+  Future<void> hide() async {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      ShowWindow(hwnd, SW_HIDE);
+    } else {
+      // TODO: Missing implementation.
+    }
+  }
+
+  /// Shows the window holding Flutter view.
+  Future<void> show() async {
+    assertEnsureInitialized();
+    if (Platform.isWindows) {
+      ShowWindow(hwnd, SW_SHOW);
+    } else {
+      // TODO: Missing implementation.
     }
   }
 
@@ -557,10 +607,18 @@ class WindowPlus extends WindowState {
   SavedWindowState _savedWindowStateBeforeFullscreen =
       const SavedWindowState(0, 0, 0, 0, false);
 
-  /// The method which gets called when the window close event happens.
+  /// The method gets called when the window close event happens.
   /// This may be used to intercept the event and prevent the window from closing.
   ///
   static Future<bool> Function()? _windowCloseHandler;
+
+  /// This method gets called when the application is opened with single instance mode enabled.
+  /// This may be used to handle the event and receieve the arguments.
+  ///
+  /// **NOTE:**
+  /// Currently only single argument is sent/received.
+  /// However, `List<String>` is used to prevent breaking changes in the future.
+  static void Function(List<String> arguments)? _singleInstanceArgumentsHandler;
 
   final StreamController<Offset> _position = StreamController.broadcast();
   final StreamController<Rect> _size = StreamController.broadcast();
