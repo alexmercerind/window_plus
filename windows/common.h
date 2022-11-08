@@ -14,6 +14,8 @@ static constexpr auto kSetStateMethodName = "setState";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
 static constexpr auto kNotifyFirstFrameRasterizedMethodName =
     "notifyFirstFrameRasterized";
+static constexpr auto kWindowMovedMethodName = "windowMoved";
+static constexpr auto kWindowResizedMethodName = "windowResized";
 
 static constexpr auto kWindows10RTM = 10240;
 static constexpr auto kWindows10RS1 = 14393;

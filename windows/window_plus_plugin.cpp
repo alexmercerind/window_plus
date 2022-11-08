@@ -302,8 +302,14 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       }
       return 0;
     }
+    case WM_MOVE: {
+      // Notify Flutter.
+      channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+    }
     case WM_SIZE: {
       AlignChildContent();
+      // Notify Flutter.
+      channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       return 0;
     }
     case WM_WINDOWPOSCHANGING: {
@@ -527,6 +533,8 @@ void WindowPlusPlugin::HandleMethodCall(
       // Typically, an instance of |std::bad_variant_access| will be received.
       ::ShowWindow(GetWindow(), SW_SHOWNORMAL);
     }
+    // Request focus.
+    ::SetForegroundWindow(GetWindow());
     result->Success();
   } else {
     result->NotImplemented();
