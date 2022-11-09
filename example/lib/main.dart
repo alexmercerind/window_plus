@@ -247,6 +247,17 @@ class _MyAppState extends State<MyApp> {
                                                 'savedWindowState: null',
                                               ),
                                   ),
+                                  FutureBuilder(
+                                    future: WindowPlus.instance.monitors,
+                                    builder: (context, snapshot) =>
+                                        snapshot.hasData
+                                            ? Text(
+                                                'monitors: ${snapshot.data.toString()}',
+                                              )
+                                            : const Text(
+                                                'monitors: null',
+                                              ),
+                                  ),
                                   Text(
                                     'singleInstanceArguments: $singleInstanceArguments',
                                   ),

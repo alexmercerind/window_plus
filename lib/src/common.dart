@@ -29,5 +29,7 @@ const String kHwndKey = 'hwnd';
 
 const String kWin32FlutterViewWindowClass = 'FLUTTERVIEW';
 
+const int kMaximumMonitorCount = 16;
+
 // ignore: constant_identifier_names
 const int WM_CAPTIONAREA = WM_USER + 0x0009;

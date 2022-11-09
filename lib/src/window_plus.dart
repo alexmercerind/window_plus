@@ -4,6 +4,8 @@
 //
 // All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
@@ -13,9 +15,10 @@ import 'package:win32/win32.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:window_plus/src/common.dart';
-import 'package:window_plus/src/models/saved_window_state.dart';
 import 'package:window_plus/src/window_state.dart';
 import 'package:window_plus/src/utils/windows_info.dart';
+import 'package:window_plus/src/models/monitor.dart';
+import 'package:window_plus/src/models/saved_window_state.dart';
 
 /// The primary API to draw & handle the custom window frame.
 ///
@@ -76,9 +79,9 @@ class WindowPlus extends WindowState {
           {
             try {
               _instance?._position.add(_instance!.position);
-            } catch (exception, stacktrace) {
-              debugPrint(exception.toString());
-              debugPrint(stacktrace.toString());
+            } catch (exception /* , stacktrace */) {
+              // debugPrint(exception.toString());
+              // debugPrint(stacktrace.toString());
             }
             break;
           }
@@ -86,9 +89,9 @@ class WindowPlus extends WindowState {
           {
             try {
               _instance?._size.add(_instance!.size);
-            } catch (exception, stacktrace) {
-              debugPrint(exception.toString());
-              debugPrint(stacktrace.toString());
+            } catch (exception /* , stacktrace */) {
+              // debugPrint(exception.toString());
+              // debugPrint(stacktrace.toString());
             }
             break;
           }
@@ -97,9 +100,9 @@ class WindowPlus extends WindowState {
             // Save the window state before closing the window.
             try {
               await WindowPlus.instance.save();
-            } catch (exception, stacktrace) {
-              debugPrint(exception.toString());
-              debugPrint(stacktrace.toString());
+            } catch (exception /* , stacktrace */) {
+              // debugPrint(exception.toString());
+              // debugPrint(stacktrace.toString());
             }
             // Call the public handler.
             final destroy =
@@ -540,6 +543,50 @@ class WindowPlus extends WindowState {
     }
   }
 
+  Future<List<Monitor>> get monitors async {
+    if (Platform.isWindows) {
+      final data = calloc<_MonitorsUserData>();
+      final monitors = calloc<_Monitor>(kMaximumMonitorCount);
+      data.ref.count = 0;
+      data.ref.monitors = monitors;
+      final result = <Monitor>[];
+      EnumDisplayMonitors(
+        0,
+        nullptr,
+        Pointer.fromFunction<MonitorEnumProc>(
+          _enumDisplayMonitorsProc,
+          TRUE,
+        ),
+        data.address,
+      );
+      for (int i = 0; i < data.ref.count; i++) {
+        final monitor = data.ref.monitors.elementAt(i).ref;
+        result.add(
+          Monitor(
+            Rect.fromLTRB(
+              monitor.work_left.toDouble(),
+              monitor.work_top.toDouble(),
+              monitor.work_right.toDouble(),
+              monitor.work_bottom.toDouble(),
+            ),
+            Rect.fromLTRB(
+              monitor.left.toDouble(),
+              monitor.top.toDouble(),
+              monitor.right.toDouble(),
+              monitor.bottom.toDouble(),
+            ),
+          ),
+        );
+      }
+      calloc.free(monitors);
+      calloc.free(data);
+      return result;
+    } else {
+      // TODO: Missing implementation.
+      return [];
+    }
+  }
+
   double get captionPadding {
     if (_enableCustomFrame) {
       return getSystemMetrics(SM_CXBORDER);
@@ -622,4 +669,54 @@ class WindowPlus extends WindowState {
 
   final StreamController<Offset> _position = StreamController.broadcast();
   final StreamController<Rect> _size = StreamController.broadcast();
+}
+
+/// A native typed `struct` to retrieve monitor information.
+class _MonitorsUserData extends Struct {
+  @Int32()
+  external int count;
+
+  external Pointer<_Monitor> monitors;
+}
+
+/// A native typed `struct` to pack monitor information.
+class _Monitor extends Struct {
+  @Int32()
+  external int left;
+  @Int32()
+  external int top;
+  @Int32()
+  external int right;
+  @Int32()
+  external int bottom;
+  @Int32()
+  external int work_left;
+  @Int32()
+  external int work_top;
+  @Int32()
+  external int work_right;
+  @Int32()
+  external int work_bottom;
+  @Int32()
+  external int dpi;
+}
+
+/// Helper method to enumerate all the monitors on Windows using `package:win32` through `dart:ffi`.
+int _enumDisplayMonitorsProc(int monitor, int _, Pointer<RECT> __, int lparam) {
+  final info = calloc<MONITORINFO>();
+  info.ref.cbSize = sizeOf<MONITORINFO>();
+  GetMonitorInfo(monitor, info);
+  final data = Pointer<_MonitorsUserData>.fromAddress(lparam);
+  final current = data.ref.monitors.elementAt(data.ref.count);
+  current.ref.left = info.ref.rcMonitor.left;
+  current.ref.top = info.ref.rcMonitor.top;
+  current.ref.right = info.ref.rcMonitor.right;
+  current.ref.bottom = info.ref.rcMonitor.bottom;
+  current.ref.work_left = info.ref.rcWork.left;
+  current.ref.work_top = info.ref.rcWork.top;
+  current.ref.work_right = info.ref.rcWork.right;
+  current.ref.work_bottom = info.ref.rcWork.bottom;
+  data.ref.count++;
+  calloc.free(info);
+  return TRUE;
 }
