@@ -91,6 +91,16 @@ class _MyAppState extends State<MyApp> {
             color: Color(0xFFFFFFFF),
           ),
         ),
+        textButtonTheme: TextButtonThemeData(
+          style: ButtonStyle(
+            textStyle: MaterialStateProperty.all(
+              const TextStyle(
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.6,
+              ),
+            ),
+          ),
+        ),
       ),
       home: LayoutBuilder(
         builder: (context, _) {
