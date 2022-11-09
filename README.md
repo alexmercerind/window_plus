@@ -1,6 +1,17 @@
 # [window+](https://github.com/alexmercerind/window_plus)
 
-As it should be.
+As it should be. Extend view into title-bar.
+
+![window_plus_windows_11_1](https://user-images.githubusercontent.com/28951144/200663277-a77e1e3f-1a29-4f33-99f7-12d35f15f4cf.png)
+![window_plus_windows_11_2](https://user-images.githubusercontent.com/28951144/200663282-6c9740c7-ceb0-415b-9aec-3c52ea40e47f.png)
+
+<details>
+
+<summary> Windows 7 </summary>
+
+![window_plus_windows_7](https://user-images.githubusercontent.com/28951144/200663272-c5b678d8-2974-47d8-8210-a7d747a917ac.png)
+
+</details>
 
 ## Features
 
@@ -9,11 +20,11 @@ As it should be.
 - [x] Excellent backward compatibility, till Windows 7 SP1.
 - [x] Fullscreen support.
 - [ ] Overlay & always on-top support.
-- [ ] Programmatic maximize, restore, size, move, close & destroy.
-- [ ] Subscription to window resize & move.
+- [x] Programmatic maximize, restore, size, move, close & destroy.
+- [x] Subscription to window resize & move.
 - [ ] Customizable minimum window size.
 - [x] Multiple monitor(s) compatibility.
-- [ ] Single instance support & argument vector (`List<String> args`) forwarding.
+- [x] Single instance support & argument vector (`List<String> args`) forwarding.
 - [ ] Windows 11 snap layouts.
 - [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
 
