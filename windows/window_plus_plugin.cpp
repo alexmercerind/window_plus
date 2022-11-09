@@ -158,6 +158,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
                                                             WPARAM wparam,
                                                             LPARAM lparam) {
   switch (message) {
+    // Handle single instance argument vector.
     case WM_COPYDATA: {
       SendSingleInstanceData(lparam);
       break;
@@ -335,6 +336,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
 std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
   switch (message) {
+    // Handle single instance argument vector.
     case WM_COPYDATA: {
       SendSingleInstanceData(lparam);
       break;
@@ -420,8 +422,10 @@ LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
 void WindowPlusPlugin::SendSingleInstanceData(LPARAM lparam) {
   auto copy_data_struct = reinterpret_cast<COPYDATASTRUCT*>(lparam);
   if (copy_data_struct->dwData == 1) {
-    auto size = copy_data_struct->cbData;
-    if (size) {
+    // Remove the trailing null character.
+    auto size = copy_data_struct->cbData - 2;
+    if (size > 0) {
+      // Unpack |lpData| into a |std::string| for sending to Dart.
       auto data = reinterpret_cast<char*>(copy_data_struct->lpData);
       auto encoded_data = std::string{data, size};
       std::cout << encoded_data << std::endl;
@@ -431,6 +435,7 @@ void WindowPlusPlugin::SendSingleInstanceData(LPARAM lparam) {
                              std::make_unique<flutter::EncodableValue>(result),
                              nullptr);
     } else {
+      // No arguments received.
       std::cout << "nullptr" << std::endl;
       channel_->InvokeMethod(kSingleInstanceDataReceivedMethodName,
                              std::make_unique<flutter::EncodableValue>(

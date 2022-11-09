@@ -67,12 +67,13 @@ void WindowPlusPluginCApiHandleSingleInstance(const wchar_t class_name[],
     auto cds = COPYDATASTRUCT{};
     cds.dwData = 1;
     if (!command_line_arguments.empty()) {
-      auto data = command_line_arguments.front().c_str();
-      cds.cbData = static_cast<DWORD>(strlen(data));
-      cds.lpData = reinterpret_cast<void*>(const_cast<char*>(data));
+      cds.cbData =
+          static_cast<DWORD>(command_line_arguments.front().size() + 1);
+      cds.lpData = reinterpret_cast<void*>(
+          const_cast<char*>(command_line_arguments.front().c_str()));
       ::SendMessage(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds));
     } else {
-      cds.cbData = 0;
+      cds.cbData = 1;
       cds.lpData = nullptr;
       ::SendMessage(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds));
     }
