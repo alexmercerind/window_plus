@@ -10,7 +10,7 @@ As it should be.
 - [x] Fullscreen support.
 - [ ] Overlay & always on-top support.
 - [ ] Programmatic maximize, restore, size, move, close & destroy.
-- [ ] Listen to window resize & move.
+- [ ] Subscription to window resize & move.
 - [ ] Customizable minimum window size.
 - [x] Multiple monitor(s) compatibility.
 - [ ] Single instance support & argument vector (`List<String> args`) forwarding.
