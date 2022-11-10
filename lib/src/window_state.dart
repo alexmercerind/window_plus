@@ -26,6 +26,8 @@ class WindowState {
   WindowState({
     required this.application,
   }) {
+    // Register the platform channel method call handler.
+    channel.setMethodCallHandler(methodCallHandler);
     try {
       storage ??= SafeLocalStorage(localStorageFilePath);
       savedWindowState.then((value) => debugPrint(value.toString()));
@@ -146,4 +148,8 @@ class WindowState {
 
   /// [MethodChannel] for communicating with the native side.
   final MethodChannel channel = const MethodChannel(kMethodChannelName);
+
+  /// Platform channel method call handler.
+  /// Used to receive method calls & event callbacks from the platform specific implementation.
+  Future<dynamic> methodCallHandler(MethodCall call) async {}
 }

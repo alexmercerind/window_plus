@@ -13,11 +13,12 @@ import 'dart:ffi' hide Size;
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 
 import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_state.dart';
-import 'package:window_plus/src/utils/windows_info.dart';
 import 'package:window_plus/src/models/monitor.dart';
+import 'package:window_plus/src/utils/windows_info.dart';
 import 'package:window_plus/src/models/saved_window_state.dart';
 
 /// The primary API to draw & handle the custom window frame.
@@ -51,8 +52,36 @@ class WindowPlus extends WindowState {
   static WindowPlus? _instance;
 
   WindowPlus._({
-    required String application,
-  }) : super(application: application);
+    required super.application,
+    bool? enableCustomFrame,
+  }) {
+    _enableCustomFrame =
+        enableCustomFrame ?? WindowsInfo.instance.isWindows10RS1OrGreater;
+  }
+
+  /// Performs the initialization of the [WindowPlus] object & `async` operations.
+  Future<void> setup() async {
+    hwnd = await channel.invokeMethod(
+      kEnsureInitializedMethodName,
+      {
+        'enableCustomFrame': _enableCustomFrame,
+        'savedWindowState': (await savedWindowState)?.toJson(),
+      },
+    );
+    // Display the window after the first frame has been rasterized.
+    WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
+      channel.invokeMethod(
+        kNotifyFirstFrameRasterizedMethodName,
+        {
+          'savedWindowState': (await savedWindowState)?.toJson(),
+        },
+      );
+    });
+    debugPrint(hwnd.toString());
+    debugPrint(captionPadding.toString());
+    debugPrint(captionHeight.toString());
+    debugPrint(captionButtonSize.toString());
+  }
 
   /// Initializes the [WindowPlus] instance for use.
   ///
@@ -69,84 +98,66 @@ class WindowPlus extends WindowState {
   static Future<void> ensureInitialized({
     required String application,
     bool? enableCustomFrame,
-  }) async {
-    _instance = WindowPlus._(application: application);
-    _instance?._enableCustomFrame =
-        enableCustomFrame ?? WindowsInfo.instance.isWindows10RS1OrGreater;
-    _instance?.channel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case kWindowMovedMethodName:
-          {
-            try {
-              _instance?._position.add(_instance!.position);
-            } catch (exception /* , stacktrace */) {
-              // debugPrint(exception.toString());
-              // debugPrint(stacktrace.toString());
-            }
-            break;
-          }
-        case kWindowResizedMethodName:
-          {
-            try {
-              _instance?._size.add(_instance!.size);
-            } catch (exception /* , stacktrace */) {
-              // debugPrint(exception.toString());
-              // debugPrint(stacktrace.toString());
-            }
-            break;
-          }
-        case kWindowCloseReceivedMethodName:
-          {
-            // Save the window state before closing the window.
-            try {
-              await WindowPlus.instance.save();
-            } catch (exception /* , stacktrace */) {
-              // debugPrint(exception.toString());
-              // debugPrint(stacktrace.toString());
-            }
-            // Call the public handler.
-            final destroy =
-                await (_windowCloseHandler?.call() ?? Future.value(true));
-            if (destroy) {
-              _instance?.destroy();
-            }
-            break;
-          }
-        case kSingleInstanceDataReceivedMethodName:
-          {
-            try {
-              _singleInstanceArgumentsHandler?.call(
-                List<String>.from(call.arguments),
-              );
-            } catch (exception, stacktrace) {
-              debugPrint(exception.toString());
-              debugPrint(stacktrace.toString());
-            }
-            break;
-          }
-      }
-    });
-    // Make the window visible based on saved state.
-    _instance?.hwnd = await _instance?.channel.invokeMethod(
-      kEnsureInitializedMethodName,
-      {
-        'enableCustomFrame': _instance?._enableCustomFrame,
-        'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
-      },
+  }) {
+    _instance = WindowPlus._(
+      application: application,
+      enableCustomFrame: enableCustomFrame,
     );
-    debugPrint(_instance?.hwnd.toString());
-    debugPrint(_instance?.captionPadding.toString());
-    debugPrint(_instance?.captionHeight.toString());
-    debugPrint(_instance?.captionButtonSize.toString());
-    // Show the actual window once the first frame is rasterized.
-    WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
-      _instance?.channel.invokeMethod(
-        kNotifyFirstFrameRasterizedMethodName,
+    return _instance?.setup() ?? Future.value();
+  }
+
+  /// Platform channel method call handler.
+  /// Used to receive method calls & event callbacks from the platform specific implementation.
+  @override
+  Future<dynamic> methodCallHandler(MethodCall call) async {
+    switch (call.method) {
+      case kWindowMovedMethodName:
         {
-          'savedWindowState': (await _instance?.savedWindowState)?.toJson(),
-        },
-      );
-    });
+          try {
+            _position.add(position);
+          } catch (exception) {
+            //
+          }
+          break;
+        }
+      case kWindowResizedMethodName:
+        {
+          try {
+            _size.add(size);
+          } catch (exception) {
+            //
+          }
+          break;
+        }
+
+      case kSingleInstanceDataReceivedMethodName:
+        {
+          try {
+            _singleInstanceArgumentsHandler?.call(
+              List<String>.from(call.arguments),
+            );
+          } catch (exception, stacktrace) {
+            debugPrint(exception.toString());
+            debugPrint(stacktrace.toString());
+          }
+          break;
+        }
+      case kWindowCloseReceivedMethodName:
+        {
+          try {
+            await save();
+          } catch (exception) {
+            //
+          }
+          // Call the public handler.
+          final result =
+              await (_windowCloseHandler?.call() ?? Future.value(true));
+          if (result) {
+            destroy();
+          }
+          break;
+        }
+    }
   }
 
   /// Whether the window is minimized.
@@ -231,7 +242,7 @@ class WindowPlus extends WindowState {
   /// ```dart
   /// Future<void> main() async {
   ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   WindowPlus.ensureInitialized(
+  ///   await WindowPlus.ensureInitialized(
   ///     application: 'com.alexmercerind.window_plus',
   ///   );
   ///   WindowPlus.instance.setWindowShouldCloseHandler(
@@ -270,6 +281,23 @@ class WindowPlus extends WindowState {
   /// **NOTE:**
   /// Currently only single argument is sent/received.
   /// However, `List<String>` is used to prevent breaking changes in the future.
+  ///
+  /// e.g.
+  ///
+  /// ```dart
+  /// Future<void> main() async {
+  ///   WidgetsFlutterBinding.ensureInitialized();
+  ///   await WindowPlus.ensureInitialized(
+  ///     application: 'com.alexmercerind.window_plus',
+  ///   );
+  ///   WindowPlus.instance.setSingleInstanceArgumentsHandler(
+  ///     (List<String> args) async {
+  ///       print(args);
+  ///     },
+  ///   );
+  /// }
+  /// ```
+  ///
   void setSingleInstanceArgumentsHandler(
       void Function(List<String>)? singleInstanceArgumentsHandler) {
     _singleInstanceArgumentsHandler = singleInstanceArgumentsHandler;
@@ -649,7 +677,6 @@ class WindowPlus extends WindowState {
   /// Whether a custom window frame should be used or not.
   bool _enableCustomFrame = false;
 
-  /// Only used on Windows.
   /// Window [Rect] before entering fullscreen.
   SavedWindowState _savedWindowStateBeforeFullscreen =
       const SavedWindowState(0, 0, 0, 0, false);

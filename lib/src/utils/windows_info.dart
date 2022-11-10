@@ -11,6 +11,9 @@ import 'package:win32/win32.dart';
 
 import 'package:flutter/foundation.dart';
 
+typedef RtlGetVersionNative = Void Function(Pointer<OSVERSIONINFOEX>);
+typedef RtlGetVersionDart = void Function(Pointer<OSVERSIONINFOEX>);
+
 class WindowsInfo {
   static WindowsInfo instance = WindowsInfo._();
 
@@ -44,9 +47,11 @@ class WindowsInfo {
           ..wSuiteMask = 0
           ..wProductType = 0
           ..wReserved = 0;
-        final rtlGetVersion = DynamicLibrary.open('ntdll.dll').lookupFunction<
-            Void Function(Pointer<OSVERSIONINFOEX>),
-            void Function(Pointer<OSVERSIONINFOEX>)>('RtlGetVersion');
+        final rtlGetVersion = DynamicLibrary.open(
+          'ntdll.dll',
+        ).lookupFunction<RtlGetVersionNative, RtlGetVersionDart>(
+          'RtlGetVersion',
+        );
         rtlGetVersion(pointer);
         data = pointer.ref;
         isWindows10OrGreater = pointer.ref.dwBuildNumber >= _kWindows10RTM;
