@@ -70,7 +70,7 @@ class _MyAppState extends State<MyApp> {
           brightness: Brightness.light,
           primary: Color(0xFF6200EA),
           onPrimary: Color(0xFFFFFFFF),
-          secondary: Color(0xFF1dE9B6),
+          secondary: Color(0xFF1DE9B6),
           onSecondary: Color(0xFF000000),
           error: Color(0xFFFF0000),
           onError: Color(0xFFFFFFFF),
@@ -78,28 +78,6 @@ class _MyAppState extends State<MyApp> {
           onBackground: Color(0xFF000000),
           surface: Color(0xFFFFFFFF),
           onSurface: Color(0xFF000000),
-        ),
-      ).copyWith(
-        tooltipTheme: TooltipThemeData(
-          verticalOffset: 48.0,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4.0),
-            color: const Color(0xFF000000),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 14.0,
-            color: Color(0xFFFFFFFF),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: ButtonStyle(
-            textStyle: MaterialStateProperty.all(
-              const TextStyle(
-                fontWeight: FontWeight.w500,
-                letterSpacing: 1.6,
-              ),
-            ),
-          ),
         ),
       ),
       home: LayoutBuilder(
@@ -112,7 +90,7 @@ class _MyAppState extends State<MyApp> {
                   '/sponsors/alexmercerind',
                 ),
               ),
-              backgroundColor: Colors.pink.shade100,
+              backgroundColor: Colors.pink.shade50,
               foregroundColor: Colors.pink.shade400,
               tooltip: 'Sponsor',
               child: const Icon(
@@ -203,15 +181,6 @@ class _MyAppState extends State<MyApp> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'minimized: ${WindowPlus.instance.minimized}',
-                                  ),
-                                  Text(
-                                    'maximized: ${WindowPlus.instance.maximized}',
-                                  ),
-                                  Text(
-                                    'fullscreen: ${WindowPlus.instance.fullscreen}',
-                                  ),
-                                  Text(
                                     'hwnd: ${WindowPlus.instance.hwnd}',
                                   ),
                                   Text(
@@ -225,47 +194,136 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                   StreamBuilder(
                                     builder: (context, snapshot) =>
-                                        snapshot.hasData
-                                            ? Text(
-                                                'size: ${snapshot.data.toString()}',
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'minimizedStream: null',
                                               )
-                                            : const Text(
-                                                'size: null',
+                                            : Text(
+                                                'minimizedStream: ${snapshot.data.toString()}',
                                               ),
-                                    stream: WindowPlus.instance.sizeStream,
+                                    stream: WindowPlus.instance.minimizedStream,
+                                  ),
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'maximizedStream: null',
+                                              )
+                                            : Text(
+                                                'maximizedStream: ${snapshot.data.toString()}',
+                                              ),
+                                    stream: WindowPlus.instance.maximizedStream,
+                                  ),
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'fullscreenStream: null',
+                                              )
+                                            : Text(
+                                                'fullscreenStream: ${snapshot.data.toString()}',
+                                              ),
+                                    stream:
+                                        WindowPlus.instance.fullscreenStream,
                                   ),
                                   StreamBuilder(
                                     builder: (context, snapshot) =>
                                         snapshot.hasData
                                             ? Text(
-                                                'position: ${snapshot.data.toString()}',
+                                                'sizeStream: ${snapshot.data.toString()}',
                                               )
                                             : const Text(
-                                                'position: null',
+                                                'sizeStream: null',
+                                              ),
+                                    stream: WindowPlus.instance.sizeStream,
+                                  ),
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'positionStream: null',
+                                              )
+                                            : Text(
+                                                'positionStream: ${snapshot.data.toString()}',
                                               ),
                                     stream: WindowPlus.instance.positionStream,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'minimized: null',
+                                              )
+                                            : Text(
+                                                'minimized: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.minimized,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'maximized: null',
+                                              )
+                                            : Text(
+                                                'maximized: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.maximized,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'fullscreen: null',
+                                              )
+                                            : Text(
+                                                'fullscreen: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.fullscreen,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'size: null',
+                                              )
+                                            : Text(
+                                                'size: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.size,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'position: null',
+                                              )
+                                            : Text(
+                                                'position: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.position,
                                   ),
                                   FutureBuilder(
                                     future:
                                         WindowPlus.instance.savedWindowState,
                                     builder: (context, snapshot) =>
-                                        snapshot.hasData
-                                            ? Text(
-                                                'savedWindowState: ${snapshot.data.toString()}',
-                                              )
-                                            : const Text(
+                                        !snapshot.hasData
+                                            ? const Text(
                                                 'savedWindowState: null',
+                                              )
+                                            : Text(
+                                                'savedWindowState: ${snapshot.data.toString()}',
                                               ),
                                   ),
                                   FutureBuilder(
                                     future: WindowPlus.instance.monitors,
                                     builder: (context, snapshot) =>
-                                        snapshot.hasData
-                                            ? Text(
-                                                'monitors: ${snapshot.data.toString()}',
-                                              )
-                                            : const Text(
+                                        !snapshot.hasData
+                                            ? const Text(
                                                 'monitors: null',
+                                              )
+                                            : Text(
+                                                'monitors: ${snapshot.data.toString()}',
                                               ),
                                   ),
                                   Text(
@@ -307,37 +365,53 @@ class _MyAppState extends State<MyApp> {
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.move(
-                                  WindowPlus.instance.position.dx ~/ 1 - 10,
-                                  WindowPlus.instance.position.dy ~/ 1,
-                                ),
+                                onPressed: () async {
+                                  final position =
+                                      await WindowPlus.instance.position;
+                                  WindowPlus.instance.move(
+                                    position.dx ~/ 1 - 10,
+                                    position.dy ~/ 1,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_back),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.move(
-                                  WindowPlus.instance.position.dx ~/ 1 + 10,
-                                  WindowPlus.instance.position.dy ~/ 1,
-                                ),
+                                onPressed: () async {
+                                  final position =
+                                      await WindowPlus.instance.position;
+                                  WindowPlus.instance.move(
+                                    position.dx ~/ 1 + 10,
+                                    position.dy ~/ 1,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_forward),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.move(
-                                  WindowPlus.instance.position.dx ~/ 1,
-                                  WindowPlus.instance.position.dy ~/ 1 - 10,
-                                ),
+                                onPressed: () async {
+                                  final position =
+                                      await WindowPlus.instance.position;
+                                  WindowPlus.instance.move(
+                                    position.dx ~/ 1,
+                                    position.dy ~/ 1 - 10,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_upward),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.move(
-                                  WindowPlus.instance.position.dx ~/ 1,
-                                  WindowPlus.instance.position.dy ~/ 1 + 10,
-                                ),
+                                onPressed: () async {
+                                  final position =
+                                      await WindowPlus.instance.position;
+                                  WindowPlus.instance.move(
+                                    position.dx ~/ 1,
+                                    position.dy ~/ 1 + 10,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_downward),
                                 splashRadius: 20.0,
                               ),
@@ -353,37 +427,49 @@ class _MyAppState extends State<MyApp> {
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.resize(
-                                  WindowPlus.instance.size.width ~/ 1 - 10,
-                                  WindowPlus.instance.size.height ~/ 1,
-                                ),
+                                onPressed: () async {
+                                  final size = await WindowPlus.instance.size;
+                                  WindowPlus.instance.resize(
+                                    size.width ~/ 1 - 10,
+                                    size.height ~/ 1,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_back),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.resize(
-                                  WindowPlus.instance.size.width ~/ 1 + 10,
-                                  WindowPlus.instance.size.height ~/ 1,
-                                ),
+                                onPressed: () async {
+                                  final size = await WindowPlus.instance.size;
+                                  WindowPlus.instance.resize(
+                                    size.width ~/ 1 + 10,
+                                    size.height ~/ 1,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_forward),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.resize(
-                                  WindowPlus.instance.size.width ~/ 1,
-                                  WindowPlus.instance.size.height ~/ 1 - 10,
-                                ),
+                                onPressed: () async {
+                                  final size = await WindowPlus.instance.size;
+                                  WindowPlus.instance.resize(
+                                    size.width ~/ 1,
+                                    size.height ~/ 1 - 10,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_upward),
                                 splashRadius: 20.0,
                               ),
                               const SizedBox(width: 16.0),
                               IconButton(
-                                onPressed: () => WindowPlus.instance.resize(
-                                  WindowPlus.instance.size.width ~/ 1,
-                                  WindowPlus.instance.size.height ~/ 1 + 10,
-                                ),
+                                onPressed: () async {
+                                  final size = await WindowPlus.instance.size;
+                                  WindowPlus.instance.resize(
+                                    size.width ~/ 1,
+                                    size.height ~/ 1 + 10,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_downward),
                                 splashRadius: 20.0,
                               ),
@@ -399,19 +485,26 @@ class _MyAppState extends State<MyApp> {
                 Positioned(
                   top: 200.0 - 28.0,
                   right: 32.0,
-                  child: FloatingActionButton(
-                    tooltip: WindowPlus.instance.fullscreen
-                        ? 'Exit Fullscreen'
-                        : 'Enter Fullscreen',
-                    onPressed: () {
-                      WindowPlus.instance
-                          .setIsFullscreen(!WindowPlus.instance.fullscreen);
-                    },
-                    child: Icon(
-                      WindowPlus.instance.fullscreen
-                          ? Icons.fullscreen_exit
-                          : Icons.fullscreen,
-                    ),
+                  child: FutureBuilder<bool>(
+                    future: WindowPlus.instance.fullscreen,
+                    builder: (context, snapshot) => !snapshot.hasData
+                        ? FloatingActionButton(
+                            onPressed: () {},
+                          )
+                        : FloatingActionButton(
+                            tooltip: snapshot.data!
+                                ? 'Exit Fullscreen'
+                                : 'Enter Fullscreen',
+                            onPressed: () {
+                              WindowPlus.instance
+                                  .setIsFullscreen(!snapshot.data!);
+                            },
+                            child: Icon(
+                              snapshot.data!
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
+                            ),
+                          ),
                   ),
                 ),
                 WindowCaption(
