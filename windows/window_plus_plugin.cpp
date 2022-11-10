@@ -423,11 +423,13 @@ void WindowPlusPlugin::SendSingleInstanceData(LPARAM lparam) {
   auto copy_data_struct = reinterpret_cast<COPYDATASTRUCT*>(lparam);
   if (copy_data_struct->dwData == 1) {
     // Remove the trailing null character.
-    auto size = copy_data_struct->cbData - 2;
+    // This value can be negative, so interpret it as unsigned.
+    auto size = static_cast<int64_t>(copy_data_struct->cbData) - 2;
+    std::cout << size << std::endl;
     if (size > 0) {
       // Unpack |lpData| into a |std::string| for sending to Dart.
       auto data = reinterpret_cast<char*>(copy_data_struct->lpData);
-      auto encoded_data = std::string{data, size};
+      auto encoded_data = std::string{data, static_cast<size_t>(size)};
       std::cout << encoded_data << std::endl;
       auto result = std::vector<flutter::EncodableValue>{};
       result.emplace_back(flutter::EncodableValue(encoded_data));
