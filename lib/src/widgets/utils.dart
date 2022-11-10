@@ -54,3 +54,41 @@ class WindowButtonColors {
     required this.iconMouseDown,
   });
 }
+
+class FutureWidget<T> extends StatefulWidget {
+  final Future<T>? future;
+  final Widget Function(BuildContext) loading;
+  final Widget Function(BuildContext, T?) complete;
+  const FutureWidget({
+    Key? key,
+    required this.future,
+    required this.loading,
+    required this.complete,
+  }) : super(key: key);
+
+  @override
+  State<FutureWidget<T>> createState() => _FutureWidgetState();
+}
+
+class _FutureWidgetState<T> extends State<FutureWidget<T>> {
+  T? data;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.future?.then((value) {
+        setState(() {
+          data = value;
+        });
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return data == null
+        ? widget.loading(context)
+        : widget.complete(context, data);
+  }
+}

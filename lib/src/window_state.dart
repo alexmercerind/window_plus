@@ -20,11 +20,12 @@ class WindowState {
   /// [String] value used to uniquely identify the application.
   final String application;
 
-  /// [SafeLocalStorage] used for saving the window position, size & maximized state before exit.
-  SafeLocalStorage? storage;
+  /// Whether a custom window frame should be used or not.
+  final bool enableCustomFrame;
 
   WindowState({
     required this.application,
+    required this.enableCustomFrame,
   }) {
     // Register the platform channel method call handler.
     channel.setMethodCallHandler(methodCallHandler);
@@ -143,13 +144,58 @@ class WindowState {
     }
   }
 
-  /// The window handle to which this Flutter view is bound. Only Windows specific.
+  /// Platform channel method call handler.
+  /// Used to receive method calls & event callbacks from the platform specific implementation.
+  Future<dynamic> methodCallHandler(MethodCall call) async {}
+
+  /// Initializes the [WindowState].
+  /// This method is called through [WindowPlus.ensureInitialized] since it is asynchronous in nature.
+  Future<void> initialize() async {
+    try {
+      hwnd = await channel.invokeMethod(
+        kEnsureInitializedMethodName,
+        {
+          'enableCustomFrame': enableCustomFrame,
+          'savedWindowState': (await savedWindowState)?.toJson(),
+        },
+      );
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
+    }
+
+    // TODO (@alexmercerind): Enable this on Linux implementation.
+    if (Platform.isWindows) {
+      // Display the window after the first frame has been rasterized.
+      await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    }
+
+    try {
+      await channel.invokeMethod(
+        kNotifyFirstFrameRasterizedMethodName,
+        {
+          'savedWindowState': (await savedWindowState)?.toJson(),
+        },
+      );
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
+    }
+  }
+
+  void assertEnsureInitialized() {
+    assert(
+      hwnd > 0,
+      'Either [WindowPlus.ensureInitialized] is not called.',
+    );
+  }
+
+  /// [SafeLocalStorage] used for saving the window position, size & maximized state before exit.
+  SafeLocalStorage? storage;
+
+  /// The window handle to which this Flutter view is bound.
   int hwnd = 0;
 
   /// [MethodChannel] for communicating with the native side.
   final MethodChannel channel = const MethodChannel(kMethodChannelName);
-
-  /// Platform channel method call handler.
-  /// Used to receive method calls & event callbacks from the platform specific implementation.
-  Future<dynamic> methodCallHandler(MethodCall call) async {}
 }

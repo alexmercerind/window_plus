@@ -23,6 +23,8 @@ const String kSingleInstanceDataReceivedMethodName =
     'singleInstanceDataReceived';
 const String kNotifyFirstFrameRasterizedMethodName =
     'notifyFirstFrameRasterized';
+const String kWindowStateEventReceivedMethodName = 'windowStateEventReceived';
+const String kConfigureEventReceivedMethodName = 'configureEventReceived';
 
 const String kCaptionHeightKey = 'captionHeight';
 const String kHwndKey = 'hwnd';
