@@ -15,6 +15,7 @@ dependencies:
   plugin_platform_interface: ^2.0.2
   safe_local_storage:
     git: https://github.com/harmonoid/safe_local_storage.git
+  meta: ^1.8.0
 
 dev_dependencies:
   flutter_test:
