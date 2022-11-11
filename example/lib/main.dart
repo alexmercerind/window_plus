@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:window_plus/window_plus.dart';
@@ -21,6 +22,7 @@ Future<void> main() async {
           'Do you want to close the window?',
           style: TextStyle(
             fontSize: 14.0,
+            color: Colors.black87,
           ),
         ),
         actions: [
@@ -84,7 +86,18 @@ class _MyAppState extends State<MyApp> {
           surface: Color(0xFFFFFFFF),
           onSurface: Color(0xFF000000),
         ),
-        fontFamily: 'Inter',
+        // Change few things in [ThemeData] to make things look better on Windows & Linux.
+        fontFamily: Platform.isLinux ? 'Inter' : null,
+        textButtonTheme: Platform.isWindows
+            ? TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  textStyle: const TextStyle(
+                    letterSpacing: 1.8,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+            : null,
       ),
       home: LayoutBuilder(
         builder: (context, _) {
@@ -122,13 +135,13 @@ class _MyAppState extends State<MyApp> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Icon(
-                                  Icons.window,
+                                  Icons.window_outlined,
                                   size: 256.0,
                                   color: Colors.white.withOpacity(0.7),
                                 ),
                                 const SizedBox(width: 32.0),
                                 Icon(
-                                  Icons.desktop_windows,
+                                  Icons.desktop_windows_outlined,
                                   size: 256.0,
                                   color: Colors.white.withOpacity(0.7),
                                 ),
