@@ -17,7 +17,12 @@ Future<void> main() async {
       context: navigatorKey.currentContext!,
       builder: (context) => AlertDialog(
         title: const Text('Exit'),
-        content: const Text('Do you want to close the window?'),
+        content: const Text(
+          'Do you want to close the window?',
+          style: TextStyle(
+            fontSize: 14.0,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -65,7 +70,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.from(
+      theme: ThemeData(
         colorScheme: const ColorScheme(
           brightness: Brightness.light,
           primary: Color(0xFF6200EA),
@@ -79,7 +84,7 @@ class _MyAppState extends State<MyApp> {
           surface: Color(0xFFFFFFFF),
           onSurface: Color(0xFF000000),
         ),
-        textTheme: const TextTheme().apply(fontFamily: 'Inter'),
+        fontFamily: 'Inter',
       ),
       home: LayoutBuilder(
         builder: (context, _) {
