@@ -79,6 +79,7 @@ class _MyAppState extends State<MyApp> {
           surface: Color(0xFFFFFFFF),
           onSurface: Color(0xFF000000),
         ),
+        textTheme: const TextTheme().apply(fontFamily: 'Inter'),
       ),
       home: LayoutBuilder(
         builder: (context, _) {

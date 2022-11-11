@@ -65,7 +65,6 @@ class GTKWindow extends PlatformWindow {
         }
       case kSingleInstanceDataReceivedMethodName:
         {
-          // TODO (@alexmercerind): Implement [setSingleInstanceArgumentsHandler].
           try {
             singleInstanceArgumentsHandler?.call(
               List<String>.from(call.arguments),
@@ -104,36 +103,45 @@ class GTKWindow extends PlatformWindow {
   /// Whether the window is minimized.
   @override
   Future<bool> get minimized async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    return await channel.invokeMethod(kGetIsMinimizedMethodName);
   }
 
   /// Whether the window is maximized.
   @override
   Future<bool> get maximized async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    return await channel.invokeMethod(kGetIsMaximizedMethodName);
   }
 
   /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    return await channel.invokeMethod(kGetIsFullscreenMethodName);
   }
 
   /// Gets the position of the window on the screen.
   @override
   Future<Offset> get position async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    final position = await channel.invokeMethod(
+      kGetPositionMethodName,
+    );
+    return Offset(
+      position['dx'] * 1.0,
+      position['dy'] * 1.0,
+    );
   }
 
   /// Gets the size of the window on the screen.
   @override
   Future<Rect> get size async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    final size = await channel.invokeMethod(
+      kGetSizeMethodName,
+    );
+    return Rect.fromLTRB(
+      size['left'] * 1.0,
+      size['top'] * 1.0,
+      size['right'] * 1.0,
+      size['bottom'] * 1.0,
+    );
   }
 
   /// Enables or disables the fullscreen mode.
@@ -143,29 +151,30 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> setIsFullscreen(bool enabled) async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(
+      kSetIsFullscreenMethodName,
+      {
+        'enabled': enabled,
+      },
+    );
   }
 
   /// Maximizes the window holding Flutter view.
   @override
   Future<void> maximize() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kMaximizeMethodName);
   }
 
   /// Restores the window holding Flutter view.
   @override
   Future<void> restore() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kRestoreMethodName);
   }
 
   /// Minimizes the window holding Flutter view.
   @override
   Future<void> minimize() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kMinimizeMethodName);
   }
 
   /// Closes the window holding Flutter view.
@@ -176,8 +185,7 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> close() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kCloseMethodName);
   }
 
   /// Destroys the window holding Flutter view.
@@ -186,42 +194,66 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> destroy() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kDestroyMethodName);
   }
 
   /// Moves (or sets position of the window) holding Flutter view on the screen.
   @override
   Future<void> move(int x, int y) async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(
+      kMoveMethodName,
+      {
+        'x': x,
+        'y': y,
+      },
+    );
   }
 
   /// Resizes (or sets size of the window) holding Flutter view on the screen.
   @override
   Future<void> resize(int width, int height) async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(
+      kResizeMethodName,
+      {
+        'width': width,
+        'height': height,
+      },
+    );
   }
 
   /// Hides the window holding Flutter view.
   @override
   Future<void> hide() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kHideMethodName);
   }
 
   /// Shows the window holding Flutter view.
   @override
   Future<void> show() async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    await channel.invokeMethod(kShowMethodName);
   }
 
   @override
   Future<List<Monitor>> get monitors async {
-    // TODO (@alexmercerind):
-    throw UnimplementedError();
+    final monitors = await channel.invokeMethod(kGetMonitorsMethodName);
+    return List<Monitor>.from(
+      monitors.map(
+        (monitor) => Monitor(
+          Rect.fromLTRB(
+            monitor['workarea']['left'] * 1.0,
+            monitor['workarea']['top'] * 1.0,
+            monitor['workarea']['right'] * 1.0,
+            monitor['workarea']['bottom'] * 1.0,
+          ),
+          Rect.fromLTRB(
+            monitor['bounds']['left'] * 1.0,
+            monitor['bounds']['top'] * 1.0,
+            monitor['bounds']['right'] * 1.0,
+            monitor['bounds']['bottom'] * 1.0,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
