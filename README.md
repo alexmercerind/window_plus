@@ -245,6 +245,14 @@ In `windows/runner/main.cpp`, add the following code:
 
 If you use custom window class name, then you can pass it as the first argument instead of `NULL`. Similarly, if you want to also account for your window's title, then you can pass it as the second argument instead of `NULL`.
 
+### Linux
+
+You need to edit your `linux/my_application.cc` file. See [this file for reference](https://github.com/alexmercerind/window_plus/blob/master/example/linux/my_application.cc).
+
+Notice how `G_APPLICATION_HANDLES_OPEN` & `G_APPLICATION_HANDLES_COMMAND_LINE` [are implemented](https://github.com/alexmercerind/window_plus/blob/562407f7f316714024577ce5467a12ee8f99bc24/example/linux/my_application.cc#L135-L149).
+
+Finally, forward the arguments to Dart / Flutter, with [`window_plus_plugin_handle_single_instance` call at the required location](https://github.com/alexmercerind/window_plus/blob/562407f7f316714024577ce5467a12ee8f99bc24/example/linux/my_application.cc#L24-L31).
+
 ## Platforms
 
 - Windows
