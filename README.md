@@ -2,14 +2,14 @@
 
 As it should be. Extend view into title-bar.
 
-![window_plus_windows_11_1](https://user-images.githubusercontent.com/28951144/200663277-a77e1e3f-1a29-4f33-99f7-12d35f15f4cf.png)
-![window_plus_windows_11_2](https://user-images.githubusercontent.com/28951144/200663282-6c9740c7-ceb0-415b-9aec-3c52ea40e47f.png)
+![0](https://user-images.githubusercontent.com/28951144/201383429-f1dd42bc-e53e-493b-b777-95024788212a.png)
+![1](https://user-images.githubusercontent.com/28951144/201383435-34fedc2e-7cd9-46f9-86f7-b3f5a2a6f985.png)
 
 <details>
 
 <summary> Windows 7 </summary>
 
-![window_plus_windows_7](https://user-images.githubusercontent.com/28951144/200663272-c5b678d8-2974-47d8-8210-a7d747a917ac.png)
+![3](https://user-images.githubusercontent.com/28951144/201383993-55c9c937-5e08-4627-843e-7ae63d382dfe.png)
 
 </details>
 
@@ -27,6 +27,7 @@ As it should be. Extend view into title-bar.
 - [x] Single instance support & argument vector (`List<String> args`) forwarding.
 - [ ] Windows 11 snap layouts.
 - [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
+- [x] Well tested & stable as fuck.
 
 ## Docs
 
@@ -133,7 +134,7 @@ WindowPlus.instance.positionStream.listen((Offset position) {
 
 Display custom title-bar (on Windows 10 or higher).
 
-**1. Default Windows look.**
+*1. Default Windows look.*
 
 ```dart
   @override
@@ -161,7 +162,7 @@ Display custom title-bar (on Windows 10 or higher).
   }
 ```
 
-**2. Custom look.**
+*2. Custom look.*
 
 See, `WindowCaptionArea`, `WindowMinimizeButton`, `WindowMaximizeButton`, `WindowRestoreButton`, `WindowCloseButton` or `WindowRestoreMaximizeButton`.
 You can also make your own custom `Widget`s which follow your own design language.
