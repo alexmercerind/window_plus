@@ -174,12 +174,48 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
             fl_value_lookup_string(saved_window_state, "height"));
         gint maximized = fl_value_get_bool(
             fl_value_lookup_string(saved_window_state, "maximized"));
-        // If |window| was |maximized|, then restore the |window|'s size only &
-        // make it maximized. Thus, state restored.
-        // Also, make sure to clamp ignore |width| & |height| if they exceed the
-        // current workarea dimensions and use |kWindowDefaultWidth| &
-        // |kWindowDefaultHeight| instead.
-        if (maximized) {
+        // Make the sure that |window| is present within bounds of any of the
+        // monitors. Otherwise, center the |window| to the closest monitor (to
+        // the mouse curosr).
+        // If the saved window dimensions exceed the monitor's |workarea|, then
+        // clamp to default window dimensions.
+        // If the |window| is present within bounds of any of the monitor(s),
+        // then restore the |window| to the saved position & size.
+        gboolean is_within_monitor = FALSE;
+        GdkDisplay* display = gdk_display_get_default();
+        gint n_monitors = gdk_display_get_n_monitors(display);
+        for (gint i = 0; i < n_monitors; i++) {
+          GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+          GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+          gdk_monitor_get_workarea(monitor, &workarea);
+          gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                               workarea.width == 0 && workarea.height == 0);
+          if (success) {
+            std::cout << "GdkRectangle{ " << workarea.x << ", " << workarea.y
+                      << ", " << workarea.width << ", " << workarea.height
+                      << " }" << std::endl;
+            if (!is_within_monitor) {
+              gint monitor_left = workarea.x, monitor_top = workarea.y,
+                   monitor_right = workarea.x + workarea.width,
+                   monitor_bottom = workarea.y + workarea.height;
+              monitor_left += kMonitorSafeArea;
+              monitor_top += kMonitorSafeArea;
+              monitor_right -= kMonitorSafeArea;
+              monitor_bottom -= kMonitorSafeArea;
+              if (x > monitor_left && x + width < monitor_right &&
+                  y > monitor_top && y + height < monitor_bottom) {
+                std::cout << "GtkWindow within bounds." << std::endl;
+                is_within_monitor = TRUE;
+              }
+            }
+          }
+        }
+        if (is_within_monitor) {
+          gtk_window_resize(window, width, height);
+          gtk_window_move(window, x, y);
+        } else {
+          // Not present within bounds, center with the already saved &
+          // available |height| & |width| values.
           GdkPoint cursor = get_cursor_position();
           GdkDisplay* display = gdk_display_get_default();
           GdkMonitor* monitor =
@@ -192,6 +228,9 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
                                workarea.width == 0 && workarea.height == 0);
           if (success) {
+            // Make sure to clamp ignore |width| & |height| if they exceed the
+            // current workarea dimensions and use |kWindowDefaultWidth| &
+            // |kWindowDefaultHeight| instead.
             width = width > workarea.width ? kWindowDefaultWidth : width;
             height = height > workarea.height ? kWindowDefaultHeight : height;
             gtk_window_resize(window, width, height);
@@ -199,71 +238,11 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                 window,
                 monitor_left + (monitor_right - monitor_left) / 2 - width / 2,
                 monitor_top + (monitor_bottom - monitor_top) / 2 - height / 2);
-            gtk_window_maximize(window);
           }
-        } else {
-          // If the |window| is present within bounds of any of the monitor(s),
-          // then restore the |window| to the saved position & size.
-          gboolean is_within_monitor = FALSE;
-          GdkDisplay* display = gdk_display_get_default();
-          gint n_monitors = gdk_display_get_n_monitors(display);
-          for (gint i = 0; i < n_monitors; i++) {
-            GdkMonitor* monitor = gdk_display_get_monitor(display, i);
-            GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
-            gdk_monitor_get_workarea(monitor, &workarea);
-            gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                                 workarea.width == 0 && workarea.height == 0);
-            if (success) {
-              std::cout << "GdkRectangle{ " << workarea.x << ", " << workarea.y
-                        << ", " << workarea.width << ", " << workarea.height
-                        << " }" << std::endl;
-              if (!is_within_monitor) {
-                gint monitor_left = workarea.x, monitor_top = workarea.y,
-                     monitor_right = workarea.x + workarea.width,
-                     monitor_bottom = workarea.y + workarea.height;
-                monitor_left += kMonitorSafeArea;
-                monitor_top += kMonitorSafeArea;
-                monitor_right -= kMonitorSafeArea;
-                monitor_bottom -= kMonitorSafeArea;
-                if (x > monitor_left && x + width < monitor_right &&
-                    y > monitor_top && y + height < monitor_bottom) {
-                  std::cout << "GtkWindow within bounds." << std::endl;
-                  is_within_monitor = TRUE;
-                }
-              }
-            }
-          }
-          if (is_within_monitor) {
-            gtk_window_resize(window, width, height);
-            gtk_window_move(window, x, y);
-          } else {
-            // Not present within bounds, center with the already saved &
-            // available |height| & |width| values.
-            GdkPoint cursor = get_cursor_position();
-            GdkDisplay* display = gdk_display_get_default();
-            GdkMonitor* monitor =
-                gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
-            GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
-            gdk_monitor_get_workarea(monitor, &workarea);
-            gint monitor_left = workarea.x, monitor_top = workarea.y,
-                 monitor_right = workarea.x + workarea.width,
-                 monitor_bottom = workarea.y + workarea.height;
-            gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                                 workarea.width == 0 && workarea.height == 0);
-            if (success) {
-              // Make sure to clamp ignore |width| & |height| if they exceed the
-              // current workarea dimensions and use |kWindowDefaultWidth| &
-              // |kWindowDefaultHeight| instead.
-              width = width > workarea.width ? kWindowDefaultWidth : width;
-              height = height > workarea.height ? kWindowDefaultHeight : height;
-              gtk_window_resize(window, width, height);
-              gtk_window_move(
-                  window,
-                  monitor_left + (monitor_right - monitor_left) / 2 - width / 2,
-                  monitor_top + (monitor_bottom - monitor_top) / 2 -
-                      height / 2);
-            }
-          }
+        }
+        // Maximize the |window| if it was maximized when it was closed.
+        if (maximized) {
+          gtk_window_maximize(window);
         }
       } else {
         // No saved state. Restore window to the center of the workarea.
