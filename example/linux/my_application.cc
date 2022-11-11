@@ -14,12 +14,22 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
-// Implements GApplication::activate.
-static void my_application_activate(GApplication* application) {
+// Creates a new MyApplication instance, a new window is created with a new
+// Flutter engine & Dart entry point. The entry point arguments are taken from
+// MyApplication::dart_entrypoint_arguments & passed to the Dart entry point.
+//
+// Does nothing if a window already exists.
+static void my_application_window_new(GApplication* application) {
+  // Check for an existing window. If one exists, present it and return.
+  GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
+  if (windows) {
+    gtk_window_present(GTK_WINDOW(windows->data));
+    return;
+  }
+  // Create a new GtkWindow, Flutter engine & execute the Dart entry point.
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
-
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
@@ -57,25 +67,58 @@ static void my_application_activate(GApplication* application) {
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 }
 
-// Implements GApplication::local_command_line.
-static gboolean my_application_local_command_line(GApplication* application,
-                                                  gchar*** arguments,
-                                                  int* exit_status) {
+// Implements GApplication::activate.
+static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
-  // Strip out the first argument as it is the binary name.
-  self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
-
-  g_autoptr(GError) error = nullptr;
-  if (!g_application_register(application, nullptr, &error)) {
-    g_warning("Failed to register: %s", error->message);
-    *exit_status = 1;
-    return TRUE;
+  // MyApplication::dart_entrypoint_arguments handling.
+  g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  self->dart_entrypoint_arguments = NULL;
+  if (!g_application_get_is_registered(application)) {
+    g_autoptr(GError) error = nullptr;
+    if (!g_application_register(application, nullptr, &error)) {
+      g_warning("Failed to register: %s", error->message);
+    }
   }
+  my_application_window_new(application);
+}
 
-  g_application_activate(application);
-  *exit_status = 0;
+// Implements GApplication::open.
+static void my_application_open(GApplication* application, GFile** files,
+                                gint n_files, const gchar* hint) {
+  MyApplication* self = MY_APPLICATION(application);
+  // MyApplication::dart_entrypoint_arguments handling.
+  g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  self->dart_entrypoint_arguments = g_new0(gchar*, n_files + 1);
+  for (int i = 0; i < n_files; i++) {
+    self->dart_entrypoint_arguments[i] = g_file_get_path(files[i]);
+  }
+  // For safety.
+  self->dart_entrypoint_arguments[n_files] = NULL;
+  if (!g_application_get_is_registered(application)) {
+    g_autoptr(GError) error = nullptr;
+    if (!g_application_register(application, nullptr, &error)) {
+      g_warning("Failed to register: %s", error->message);
+    }
+  }
+  my_application_window_new(application);
+}
 
-  return TRUE;
+// Implements GApplication::command_line.
+static gboolean my_application_command_line(
+    GApplication* application, GApplicationCommandLine* command_line) {
+  MyApplication* self = MY_APPLICATION(application);
+  // MyApplication::dart_entrypoint_arguments handling.
+  g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  self->dart_entrypoint_arguments =
+      g_application_command_line_get_arguments(command_line, nullptr);
+  if (!g_application_get_is_registered(application)) {
+    g_autoptr(GError) error = nullptr;
+    if (!g_application_register(application, nullptr, &error)) {
+      g_warning("Failed to register: %s", error->message);
+    }
+  }
+  my_application_window_new(application);
+  return FALSE;
 }
 
 // Implements GObject::dispose.
@@ -87,15 +130,16 @@ static void my_application_dispose(GObject* object) {
 
 static void my_application_class_init(MyApplicationClass* klass) {
   G_APPLICATION_CLASS(klass)->activate = my_application_activate;
-  G_APPLICATION_CLASS(klass)->local_command_line =
-      my_application_local_command_line;
+  G_APPLICATION_CLASS(klass)->open = my_application_open;
+  G_APPLICATION_CLASS(klass)->command_line = my_application_command_line;
   G_OBJECT_CLASS(klass)->dispose = my_application_dispose;
 }
 
 static void my_application_init(MyApplication* self) {}
 
 MyApplication* my_application_new() {
-  return MY_APPLICATION(g_object_new(my_application_get_type(),
-                                     "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_NON_UNIQUE, nullptr));
+  return MY_APPLICATION(g_object_new(
+      my_application_get_type(), "application-id", APPLICATION_ID, "flags",
+      G_APPLICATION_HANDLES_COMMAND_LINE | G_APPLICATION_HANDLES_OPEN,
+      nullptr));
 }
