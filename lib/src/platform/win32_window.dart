@@ -91,21 +91,21 @@ class Win32Window extends PlatformWindow {
   /// Whether the window is minimized.
   @override
   Future<bool> get minimized async {
-    assertEnsureInitialized();
+    assert_();
     return IsIconic(hwnd) != 0;
   }
 
   /// Whether the window is maximized.
   @override
   Future<bool> get maximized async {
-    assertEnsureInitialized();
+    assert_();
     return IsZoomed(hwnd) != 0;
   }
 
   /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
-    assertEnsureInitialized();
+    assert_();
     final style = GetWindowLongPtr(hwnd, GWL_STYLE);
     return !(style & WS_OVERLAPPEDWINDOW > 0);
   }
@@ -113,7 +113,7 @@ class Win32Window extends PlatformWindow {
   /// Gets the position of the window on the screen.
   @override
   Future<Offset> get position async {
-    assertEnsureInitialized();
+    assert_();
     final rect = calloc<RECT>();
     GetWindowRect(hwnd, rect);
     final result = Offset(
@@ -127,7 +127,7 @@ class Win32Window extends PlatformWindow {
   /// Gets the size of the window on the screen.
   @override
   Future<Rect> get size async {
-    assertEnsureInitialized();
+    assert_();
     final rect = calloc<RECT>();
     GetWindowRect(hwnd, rect);
     final result = Rect.fromLTRB(
@@ -147,7 +147,7 @@ class Win32Window extends PlatformWindow {
   ///
   @override
   Future<void> setIsFullscreen(bool enabled) async {
-    assertEnsureInitialized();
+    assert_();
     // The primary idea here is to revolve around |WS_OVERLAPPEDWINDOW| & detect/set fullscreen based on it.
     // On the native plugin side implementation, this is separately handled.
     // If there is no |WS_OVERLAPPEDWINDOW| style on the window i.e. in fullscreen, then no area is left for
@@ -253,7 +253,7 @@ class Win32Window extends PlatformWindow {
   /// Maximizes the window holding Flutter view.
   @override
   Future<void> maximize() async {
-    assertEnsureInitialized();
+    assert_();
     PostMessage(
       hwnd,
       WM_SYSCOMMAND,
@@ -265,7 +265,7 @@ class Win32Window extends PlatformWindow {
   /// Restores the window holding Flutter view.
   @override
   Future<void> restore() async {
-    assertEnsureInitialized();
+    assert_();
     PostMessage(
       hwnd,
       WM_SYSCOMMAND,
@@ -277,7 +277,7 @@ class Win32Window extends PlatformWindow {
   /// Minimizes the window holding Flutter view.
   @override
   Future<void> minimize() async {
-    assertEnsureInitialized();
+    assert_();
     PostMessage(
       hwnd,
       WM_SYSCOMMAND,
@@ -294,7 +294,7 @@ class Win32Window extends PlatformWindow {
   ///
   @override
   Future<void> close() async {
-    assertEnsureInitialized();
+    assert_();
     PostMessage(
       hwnd,
       WM_CLOSE,
@@ -309,7 +309,7 @@ class Win32Window extends PlatformWindow {
   ///
   @override
   Future<void> destroy() async {
-    assertEnsureInitialized();
+    assert_();
     PostMessage(
       hwnd,
       WM_DESTROY,
@@ -321,7 +321,7 @@ class Win32Window extends PlatformWindow {
   /// Moves (or sets position of the window) holding Flutter view on the screen.
   @override
   Future<void> move(int x, int y) async {
-    assertEnsureInitialized();
+    assert_();
     SetWindowPos(
       hwnd,
       NULL,
@@ -336,7 +336,7 @@ class Win32Window extends PlatformWindow {
   /// Resizes (or sets size of the window) holding Flutter view on the screen.
   @override
   Future<void> resize(int width, int height) async {
-    assertEnsureInitialized();
+    assert_();
     SetWindowPos(
       hwnd,
       NULL,
@@ -351,7 +351,7 @@ class Win32Window extends PlatformWindow {
   /// Hides the window holding Flutter view.
   @override
   Future<void> hide() async {
-    assertEnsureInitialized();
+    assert_();
     ShowWindow(
       hwnd,
       SW_HIDE,
@@ -361,7 +361,7 @@ class Win32Window extends PlatformWindow {
   /// Shows the window holding Flutter view.
   @override
   Future<void> show() async {
-    assertEnsureInitialized();
+    assert_();
     ShowWindow(
       hwnd,
       SW_SHOW,
@@ -437,7 +437,7 @@ class Win32Window extends PlatformWindow {
   }
 
   double _getSystemMetrics(int index) {
-    assertEnsureInitialized();
+    assert_();
     if (enableCustomFrame) {
       try {
         // Use DPI aware API [GetSystemMetricsForDpi] on Windows 10 Anniversary Update i.e. 14393.

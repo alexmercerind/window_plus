@@ -183,7 +183,7 @@ class WindowState {
     }
   }
 
-  void assertEnsureInitialized() {
+  void assert_() {
     assert(
       hwnd > 0,
       'Either [WindowPlus.ensureInitialized] is not called.',

@@ -47,8 +47,7 @@ Intercept window close event.
 
 ```dart
 WindowPlus.instance.setWindowCloseHandler(() async {
-  debugPrint('[WindowPlus.instance.setWindowCloseHandler] was called.');
-  /// Show alert if some operation is pending.
+  /// Show alert to the user. Likely if some operation is pending.
   /// Perform clean-up.
   final bool shouldClose = await doSomethingBeforeClose();
   return shouldClose;
@@ -72,11 +71,20 @@ WindowPlus.instance.setIsFullscreen(true);
 Programmatic window control.
 
 ```dart
+
+/// Control window state.
+
 WindowPlus.instance.minimize();
 WindowPlus.instance.maximize();
 WindowPlus.instance.restore();
+
+/// Close the window.
+/// [WindowPlus.instance.setWindowCloseHandler] may be used to intercept the action.
+
 WindowPlus.instance.close();
-/// Closes the window even if [WindowPlus.instance.setWindowCloseHandler] is set.
+
+/// Closes the window without respecting the [WindowPlus.instance.setWindowCloseHandler] handler.
+
 WindowPlus.instance.destroy();
 
 WindowPlus.instance.move(40, 40);
@@ -86,16 +94,32 @@ WindowPlus.instance.show();
 WindowPlus.instance.hide();
 
 /// Query.
-final bool maximized = WindowPlus.instance.maximized;
-final bool minimized = WindowPlus.instance.minimized;
-final bool fullscreen = WindowPlus.instance.fullscreen;
-final Rect size = WindowPlus.instance.size;
-final Offset position = WindowPlus.instance.position;
+final bool maximized = await WindowPlus.instance.maximized;
+final bool minimized = await WindowPlus.instance.minimized;
+final bool fullscreen = await WindowPlus.instance.fullscreen;
+final Rect size = await WindowPlus.instance.size;
+final Offset position = await WindowPlus.instance.position;
+
+/// Get all the available monitors.
+
+final List<Monitor> monitors = await WindowPlus.instance.monitors;
 ```
 
-Subscribe to window resize & move events.
+Subscribe to window events.
 
 ```dart
+
+WindowPlus.instance.maximizedStream.listen((bool value) {
+  print(value.toString());
+});
+
+WindowPlus.instance.minimizedStream.listen((bool value) {
+  print(value.toString());
+});
+
+WindowPlus.instance.fullscreenStream.listen((bool value) {
+  print(value.toString());
+});
 
 WindowPlus.instance.sizeStream.listen((Rect size) {
   print(size.toString());
@@ -109,7 +133,7 @@ WindowPlus.instance.positionStream.listen((Offset position) {
 
 Display custom title-bar (on Windows 10 or higher).
 
-1. Default Windows look.
+**1. Default Windows look.**
 
 ```dart
   @override
@@ -137,7 +161,7 @@ Display custom title-bar (on Windows 10 or higher).
   }
 ```
 
-2. Custom look.
+**2. Custom look.**
 
 See, `WindowCaptionArea`, `WindowMinimizeButton`, `WindowMaximizeButton`, `WindowRestoreButton`, `WindowCloseButton` or `WindowRestoreMaximizeButton`.
 You can also make your own custom `Widget`s which follow your own design language.
@@ -188,7 +212,7 @@ Edit `linux/my_application.cc` as:
 +  gtk_widget_realize(GTK_WIDGET(view));
    gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
    fl_register_plugins(FL_PLUGIN_REGISTRY(view));
-   gtk_widget_grab_focus(GTK_WIDGET(view));
+-   gtk_widget_grab_focus(GTK_WIDGET(view));
 ```
 
 ## Single Instance
