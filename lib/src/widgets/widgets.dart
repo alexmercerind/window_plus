@@ -45,9 +45,9 @@ class WindowCaptionArea extends StatelessWidget {
           0,
         );
       },
-      onDoubleTap: () async {
+      onDoubleTap: () {
         assert(WindowPlus.instance.hwnd > 0);
-        if (await WindowPlus.instance.maximized) {
+        if (IsZoomed(WindowPlus.instance.hwnd) != 0) {
           WindowPlus.instance.restore();
         } else {
           WindowPlus.instance.maximize();
@@ -327,33 +327,17 @@ class WindowRestoreMaximizeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureWidget<bool>(
-      future: WindowPlus.instance.maximized,
-      loading: (context) => WindowButton(
-        colors: colors ??
-            WindowButtonColors(
-              iconNormal: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFFFFFFFF)
-                  : const Color(0xFF000000),
-              iconMouseDown: const Color(0xFFFFFFFF),
-              iconMouseOver: const Color(0xFFFFFFFF),
-              normal: const Color(0x00000000),
-              mouseOver: const Color(0xFFC42B1C),
-              mouseDown: const Color(0xFFC83F31),
-            ),
-      ),
-      complete: (context, maximized) => (maximized ?? false)
-          ? WindowRestoreButton(
-              colors: colors,
-              onPressed: onPressed,
-              animate: animate,
-            )
-          : WindowMaximizeButton(
-              colors: colors,
-              onPressed: onPressed,
-              animate: animate,
-            ),
-    );
+    return IsZoomed(WindowPlus.instance.hwnd) != 0
+        ? WindowRestoreButton(
+            colors: colors,
+            onPressed: onPressed,
+            animate: animate,
+          )
+        : WindowMaximizeButton(
+            colors: colors,
+            onPressed: onPressed,
+            animate: animate,
+          );
   }
 }
 
@@ -435,47 +419,34 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
-    return FutureWidget<bool>(
-      future: WindowPlus.instance.fullscreen,
-      loading: (context) => WindowsInfo.instance.isWindows10RS1OrGreater
-          ? SizedBox(
-              width: double.infinity,
-              height: WindowPlus.instance.captionHeight,
-            )
-          : const SizedBox.shrink(),
-      complete: (context, fullscreen) {
-        if (WindowsInfo.instance.isWindows10RS1OrGreater) {
-          return (fullscreen ?? true)
-              ? SizedBox(
-                  width: double.infinity,
-                  height: WindowPlus.instance.captionHeight,
-                )
-              : SizedBox(
-                  width: double.infinity,
-                  height: WindowPlus.instance.captionHeight,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(brightness: widget.brightness),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: WindowCaptionArea(
-                            height: WindowPlus.instance.captionHeight,
-                            child: widget.child,
-                          ),
-                        ),
-                        WindowMinimizeButton(),
-                        WindowRestoreMaximizeButton(),
-                        WindowCloseButton(),
-                      ],
+    final style = GetWindowLongPtr(WindowPlus.instance.hwnd, GWL_STYLE);
+    final fullscreen = !(style & WS_OVERLAPPEDWINDOW > 0);
+    return fullscreen
+        ? SizedBox(
+            width: double.infinity,
+            height: WindowPlus.instance.captionHeight,
+          )
+        : SizedBox(
+            width: double.infinity,
+            height: WindowPlus.instance.captionHeight,
+            child: Theme(
+              data: Theme.of(context).copyWith(brightness: widget.brightness),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: WindowCaptionArea(
+                      height: WindowPlus.instance.captionHeight,
+                      child: widget.child,
                     ),
                   ),
-                );
-        }
-        return const SizedBox.shrink();
-      },
-    );
+                  WindowMinimizeButton(),
+                  WindowRestoreMaximizeButton(),
+                  WindowCloseButton(),
+                ],
+              ),
+            ),
+          );
   }
 }
