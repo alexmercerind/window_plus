@@ -55,21 +55,32 @@ class WindowPlus {
   /// RS1 (Anniversary Update) or higher (i.e. Windows 10 & 11). Enabling this on
   /// older Windows versions may result in undefined behaviors & thus not recommended.
   ///
+  /// [enableEventStreams] argument decides whether [Stream]s should be enabled for
+  /// listening to window state changes e.g. minimize, maximize, restore, position, size, etc.
+  /// It is `true` by default. Disabling this should be considered if this ability is not
+  /// needed. This may yield performance improvements.
+  ///
   static Future<void> ensureInitialized({
     required String application,
     bool? enableCustomFrame,
+    bool? enableEventStreams,
   }) {
+    // Default values.
     enableCustomFrame ??= WindowsInfo.instance.isWindows10RS1OrGreater;
+    enableEventStreams ??= true;
+    // Platform specific polymorphic initialization.
     if (Platform.isWindows) {
       _instance = Win32Window(
         application: application,
         enableCustomFrame: enableCustomFrame,
+        enableEventStreams: enableEventStreams,
       );
     }
     if (Platform.isLinux) {
       _instance = GTKWindow(
         application: application,
         enableCustomFrame: enableCustomFrame,
+        enableEventStreams: enableEventStreams,
       );
     }
     // TODO: Add support for other platforms.

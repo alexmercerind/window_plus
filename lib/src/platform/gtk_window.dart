@@ -17,6 +17,7 @@ class GTKWindow extends PlatformWindow {
   GTKWindow({
     required super.application,
     required super.enableCustomFrame,
+    required super.enableEventStreams,
   });
 
   @override

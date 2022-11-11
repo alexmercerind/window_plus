@@ -23,9 +23,14 @@ class WindowState {
   /// Whether a custom window frame should be used or not.
   final bool enableCustomFrame;
 
+  /// Whether [Stream]s should be enabled for listening to window state changes
+  /// e.g. minimize, maximize, restore, position, size, etc.
+  final bool enableEventStreams;
+
   WindowState({
     required this.application,
     required this.enableCustomFrame,
+    required this.enableEventStreams,
   }) {
     // Register the platform channel method call handler.
     channel.setMethodCallHandler(methodCallHandler);
@@ -156,6 +161,7 @@ class WindowState {
         kEnsureInitializedMethodName,
         {
           'enableCustomFrame': enableCustomFrame,
+          'enableEventStreams': enableEventStreams,
           'savedWindowState': (await savedWindowState)?.toJson(),
         },
       );

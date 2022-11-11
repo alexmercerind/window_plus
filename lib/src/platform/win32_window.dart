@@ -25,6 +25,7 @@ class Win32Window extends PlatformWindow {
   Win32Window({
     required super.application,
     required super.enableCustomFrame,
+    required super.enableEventStreams,
   });
 
   @override

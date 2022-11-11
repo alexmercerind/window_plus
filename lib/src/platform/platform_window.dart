@@ -16,6 +16,7 @@ abstract class PlatformWindow extends WindowState {
   PlatformWindow({
     required super.application,
     required super.enableCustomFrame,
+    required super.enableEventStreams,
   });
 
   /// Whether the window is minimized.
