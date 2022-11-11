@@ -359,6 +359,11 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
         FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kNotifyFirstFrameRasterizedMethodName) == 0) {
     // TODO (@alexmercerind): Missing implementation.
+    // Capture user focus & present the |window| on top of other windows.
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    gtk_window_present(window);
+    gtk_widget_grab_focus(view);
     response =
         FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kGetIsMinimizedMethodName) == 0) {
