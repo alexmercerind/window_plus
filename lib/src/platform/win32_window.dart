@@ -35,6 +35,8 @@ class Win32Window extends PlatformWindow {
         {
           try {
             positionStreamController.add(await position);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
           } catch (exception, stacktrace) {
             debugPrint(exception.toString());
             debugPrint(stacktrace.toString());
@@ -45,6 +47,8 @@ class Win32Window extends PlatformWindow {
         {
           try {
             sizeStreamController.add(await size);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
           } catch (exception, stacktrace) {
             debugPrint(exception.toString());
             debugPrint(stacktrace.toString());

@@ -170,26 +170,20 @@ class WindowState {
       debugPrint(stacktrace.toString());
     }
 
-    // TODO (@alexmercerind): Linux: Enable hide until first frame draw.
-    // On Linux, [WidgetsBinding.instance.waitUntilFirstFrameRasterized] seems to
-    // never get resolved. No frame is drawn until `FlView` & the `GtkWindow` is
-    // shown.
-    if (Platform.isWindows) {
-      // Display the window after the first frame has been rasterized.
-      await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
-    }
-
-    try {
-      await channel.invokeMethod(
-        kNotifyFirstFrameRasterizedMethodName,
-        {
-          'savedWindowState': (await savedWindowState)?.toJson(),
-        },
-      );
-    } catch (exception, stacktrace) {
-      debugPrint(exception.toString());
-      debugPrint(stacktrace.toString());
-    }
+    // Display the window after the first frame has been rasterized.
+    WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
+      try {
+        await channel.invokeMethod(
+          kNotifyFirstFrameRasterizedMethodName,
+          {
+            'savedWindowState': (await savedWindowState)?.toJson(),
+          },
+        );
+      } catch (exception, stacktrace) {
+        debugPrint(exception.toString());
+        debugPrint(stacktrace.toString());
+      }
+    });
   }
 
   void assert_() {
