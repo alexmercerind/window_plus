@@ -88,16 +88,15 @@ class _MyAppState extends State<MyApp> {
         ),
         // Change few things in [ThemeData] to make things look better on Windows & Linux.
         fontFamily: Platform.isLinux ? 'Inter' : null,
-        textButtonTheme: Platform.isWindows
-            ? TextButtonThemeData(
-                style: TextButton.styleFrom(
-                  textStyle: const TextStyle(
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              )
-            : null,
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            textStyle: TextStyle(
+              fontFamily: Platform.isLinux ? 'Inter' : null,
+              letterSpacing: 1.8,
+              fontWeight: Platform.isLinux ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ),
       ),
       home: LayoutBuilder(
         builder: (context, _) {

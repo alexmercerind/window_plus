@@ -4,6 +4,7 @@
 //
 // All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 
+import 'dart:io';
 import 'package:win32/win32.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +12,6 @@ import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_plus.dart';
 import 'package:window_plus/src/widgets/utils.dart';
 import 'package:window_plus/src/widgets/icons.dart';
-import 'package:window_plus/src/utils/windows_info.dart';
 
 /// A widget that is used to draw the draggable area of the window i.e. title bar.
 /// Any click event on this widget will result in window being dragged by the user.
@@ -419,6 +419,9 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
+    if (!WindowPlus.instance.enableCustomFrame || !Platform.isWindows) {
+      return const SizedBox.shrink();
+    }
     final style = GetWindowLongPtr(WindowPlus.instance.hwnd, GWL_STYLE);
     final fullscreen = !(style & WS_OVERLAPPEDWINDOW > 0);
     return fullscreen
