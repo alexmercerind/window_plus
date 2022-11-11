@@ -21,8 +21,8 @@ static constexpr auto kCloseMethodName = "close";
 static constexpr auto kDestroyMethodName = "destroy";
 
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
-// static constexpr auto kSingleInstanceDataReceivedMethodName =
-// "singleInstanceDataReceived";
+static constexpr auto kSingleInstanceDataReceivedMethodName =
+    "singleInstanceDataReceived";
 static constexpr auto kNotifyFirstFrameRasterizedMethodName =
     "notifyFirstFrameRasterized";
 
@@ -52,6 +52,7 @@ static constexpr auto kConfigureEventReceivedMethodName =
     "configureEventReceived";
 
 // TODO (@alexmercerind): Expose in public API.
+
 static constexpr auto kMonitorSafeArea = 8;
 static constexpr auto kWindowDefaultWidth = 1024;
 static constexpr auto kWindowDefaultHeight = 640;
@@ -69,6 +70,8 @@ struct _WindowPlusPlugin {
 };
 
 G_DEFINE_TYPE(WindowPlusPlugin, window_plus_plugin, g_object_get_type())
+
+WindowPlusPlugin* plugin = nullptr;
 
 static GdkPoint get_cursor_position() {
   GdkDisplay* display = gdk_display_get_default();
@@ -128,6 +131,33 @@ gboolean configure_event(GtkWidget* self, GdkEventConfigure* event,
   return FALSE;
 }
 
+// static gint command_line_event(GApplication* application,
+//                                GApplicationCommandLine* command_line,
+//                                gpointer user_data) {
+//   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
+//   gchar** arguments =
+//       g_application_command_line_get_arguments(command_line, nullptr);
+//   g_autoptr(FlValue) result = fl_value_new_list_from_strv(arguments + 1);
+//   fl_method_channel_invoke_method(plugin->channel,
+//                                   kSingleInstanceDataReceivedMethodName,
+//                                   result, nullptr, nullptr, nullptr);
+//   return TRUE;
+// }
+
+// static void open_event(GApplication* application, GFile** files, gint
+// n_files,
+//                        gchar* hint, gpointer user_data) {
+//   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
+//   FlValue* result = fl_value_new_list();
+//   for (gint i = 0; i < n_files; i++) {
+//     fl_value_append_take(result,
+//                          fl_value_new_string(g_file_get_path(files[i])));
+//   }
+//   fl_method_channel_invoke_method(plugin->channel,
+//                                   kSingleInstanceDataReceivedMethodName,
+//                                   result, nullptr, nullptr, nullptr);
+// }
+
 static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                                                   FlMethodCall* method_call) {
   g_autoptr(FlMethodResponse) response = nullptr;
@@ -148,6 +178,9 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                          self);
       }
     }
+    // GApplication* app = g_application_get_default();
+    // g_signal_connect(app, "command-line", G_CALLBACK(command_line_event),
+    // self); g_signal_connect(app, "open", G_CALLBACK(open_event), self);
     // Configure minimum size.
     gtk_window_set_default_size(window, kWindowDefaultWidth,
                                 kWindowDefaultHeight);
@@ -509,14 +542,25 @@ static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
 }
 
 void window_plus_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
-  WindowPlusPlugin* plugin =
+  plugin =
       WINDOW_PLUS_PLUGIN(g_object_new(window_plus_plugin_get_type(), nullptr));
   plugin->registrar = FL_PLUGIN_REGISTRAR(g_object_ref(registrar));
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
   plugin->channel =
       fl_method_channel_new(fl_plugin_registrar_get_messenger(registrar),
                             kMethodChannelName, FL_METHOD_CODEC(codec));
-  fl_method_channel_set_method_call_handler(
-      plugin->channel, method_call_cb, g_object_ref(plugin), g_object_unref);
-  g_object_unref(plugin);
+  fl_method_channel_set_method_call_handler(plugin->channel, method_call_cb,
+                                            plugin, g_object_unref);
+}
+
+void window_plus_plugin_handle_single_instance(gchar** arguments) {
+  if (plugin) {
+    g_autoptr(FlValue) result = fl_value_new_list();
+    for (gint i = 0; i < g_strv_length(arguments); i++) {
+      fl_value_append_take(result, fl_value_new_string(arguments[i]));
+    }
+    fl_method_channel_invoke_method(plugin->channel,
+                                    kSingleInstanceDataReceivedMethodName,
+                                    result, nullptr, nullptr, nullptr);
+  }
 }

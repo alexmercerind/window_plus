@@ -21,6 +21,9 @@ FLUTTER_PLUGIN_EXPORT GType window_plus_plugin_get_type();
 FLUTTER_PLUGIN_EXPORT void window_plus_plugin_register_with_registrar(
     FlPluginRegistrar* registrar);
 
+FLUTTER_PLUGIN_EXPORT void window_plus_plugin_handle_single_instance(
+    gchar** arguments);
+
 G_END_DECLS
 
 #endif  // FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_

@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "window_plus/window_plus_plugin.h"
 
 struct _MyApplication {
   GtkApplication parent_instance;
@@ -20,14 +21,15 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 //
 // Does nothing if a window already exists.
 static void my_application_window_new(GApplication* application) {
+  MyApplication* self = MY_APPLICATION(application);
   // Check for an existing window. If one exists, present it and return.
   GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
-  if (windows) {
+  if (self && windows) {
+    window_plus_plugin_handle_single_instance(self->dart_entrypoint_arguments);
     gtk_window_present(GTK_WINDOW(windows->data));
     return;
   }
   // Create a new GtkWindow, Flutter engine & execute the Dart entry point.
-  MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
   // Use a header bar when running in GNOME as this is the common style used
@@ -109,8 +111,10 @@ static gboolean my_application_command_line(
   MyApplication* self = MY_APPLICATION(application);
   // MyApplication::dart_entrypoint_arguments handling.
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
-  self->dart_entrypoint_arguments =
-      g_application_command_line_get_arguments(command_line, nullptr);
+  // Strip out the first argument as it is the binary name.
+  gchar** arguments =
+      g_application_command_line_get_arguments(command_line, nullptr) + 1;
+  self->dart_entrypoint_arguments = g_strdupv(arguments);
   if (!g_application_get_is_registered(application)) {
     g_autoptr(GError) error = nullptr;
     if (!g_application_register(application, nullptr, &error)) {
