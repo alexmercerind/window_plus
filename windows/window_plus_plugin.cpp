@@ -314,12 +314,16 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
     }
     case WM_MOVE: {
       // Notify Flutter.
-      channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+      }
     }
     case WM_SIZE: {
       AlignChildContent();
       // Notify Flutter.
-      channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
+      }
       return 0;
     }
     case WM_WINDOWPOSCHANGING: {
@@ -372,12 +376,16 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     }
     case WM_MOVE: {
       // Notify Flutter.
-      channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
+      }
     }
     case WM_SIZE: {
       AlignChildContent();
       // Notify Flutter.
-      channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
+      }
       return 0;
     }
     case WM_WINDOWPOSCHANGING: {
@@ -454,6 +462,8 @@ void WindowPlusPlugin::HandleMethodCall(
     auto arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
     enable_custom_frame_ =
         std::get<bool>(arguments[flutter::EncodableValue("enableCustomFrame")]);
+    enable_event_streams_ = std::get<bool>(
+        arguments[flutter::EncodableValue("enableEventStreams")]);
     if (enable_custom_frame_ && window_proc_delegate_id_ == -1) {
       window_proc_delegate_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
           std::bind(&WindowPlusPlugin::WindowProcDelegate, this,

@@ -135,11 +135,19 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
   if (strcmp(method, kEnsureInitializedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    g_signal_connect(window, "delete-event", G_CALLBACK(delete_event), self);
-    g_signal_connect(window, "window-state-event",
-                     G_CALLBACK(window_state_event), self);
-    g_signal_connect(window, "configure-event", G_CALLBACK(configure_event),
-                     self);
+    FlValue* arguments = fl_method_call_get_args(method_call);
+    FlValue* enable_event_streams =
+        fl_value_lookup_string(arguments, "enableEventStreams");
+    if (fl_value_get_type(enable_event_streams) == FL_VALUE_TYPE_BOOL) {
+      if (fl_value_get_bool(enable_event_streams)) {
+        g_signal_connect(window, "delete-event", G_CALLBACK(delete_event),
+                         self);
+        g_signal_connect(window, "window-state-event",
+                         G_CALLBACK(window_state_event), self);
+        g_signal_connect(window, "configure-event", G_CALLBACK(configure_event),
+                         self);
+      }
+    }
     // Configure minimum size.
     gtk_window_set_default_size(window, kWindowDefaultWidth,
                                 kWindowDefaultHeight);
@@ -160,7 +168,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
         screen, GTK_STYLE_PROVIDER(style),
         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     try {
-      FlValue* arguments = fl_method_call_get_args(method_call);
       FlValue* saved_window_state =
           fl_value_lookup_string(arguments, "savedWindowState");
       if (fl_value_get_type(saved_window_state) == FL_VALUE_TYPE_MAP) {

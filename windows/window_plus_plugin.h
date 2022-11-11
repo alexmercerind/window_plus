@@ -88,6 +88,7 @@ class WindowPlusPlugin : public flutter::Plugin {
   int32_t minimum_width_ = kWindowDefaultMinimumWidth;
   int32_t minimum_height_ = kWindowDefaultMinimumHeight;
   bool enable_custom_frame_ = false;
+  bool enable_event_streams_ = false;
   bool first_frame_rasterized_ = false;
   // DO NOT ACCESS THIS MEMBER DIRECTLY. Use |GetMonitors| instead.
   std::vector<HMONITOR> monitors_ = {};
