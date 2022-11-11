@@ -490,7 +490,7 @@ class _MyAppState extends State<MyApp> {
                 ),
                 Positioned(
                   top: 200.0 - 28.0,
-                  right: 32.0,
+                  right: 16.0,
                   child: FutureBuilder<bool>(
                     future: WindowPlus.instance.fullscreen,
                     builder: (context, snapshot) => !snapshot.hasData
