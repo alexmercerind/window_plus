@@ -131,33 +131,6 @@ gboolean configure_event(GtkWidget* self, GdkEventConfigure* event,
   return FALSE;
 }
 
-// static gint command_line_event(GApplication* application,
-//                                GApplicationCommandLine* command_line,
-//                                gpointer user_data) {
-//   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
-//   gchar** arguments =
-//       g_application_command_line_get_arguments(command_line, nullptr);
-//   g_autoptr(FlValue) result = fl_value_new_list_from_strv(arguments + 1);
-//   fl_method_channel_invoke_method(plugin->channel,
-//                                   kSingleInstanceDataReceivedMethodName,
-//                                   result, nullptr, nullptr, nullptr);
-//   return TRUE;
-// }
-
-// static void open_event(GApplication* application, GFile** files, gint
-// n_files,
-//                        gchar* hint, gpointer user_data) {
-//   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
-//   FlValue* result = fl_value_new_list();
-//   for (gint i = 0; i < n_files; i++) {
-//     fl_value_append_take(result,
-//                          fl_value_new_string(g_file_get_path(files[i])));
-//   }
-//   fl_method_channel_invoke_method(plugin->channel,
-//                                   kSingleInstanceDataReceivedMethodName,
-//                                   result, nullptr, nullptr, nullptr);
-// }
-
 static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
                                                   FlMethodCall* method_call) {
   g_autoptr(FlMethodResponse) response = nullptr;
@@ -170,18 +143,14 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
         fl_value_lookup_string(arguments, "enableEventStreams");
     if (fl_value_get_type(enable_event_streams) == FL_VALUE_TYPE_BOOL) {
       if (fl_value_get_bool(enable_event_streams)) {
-        g_signal_connect(window, "delete-event", G_CALLBACK(delete_event),
-                         self);
         g_signal_connect(window, "window-state-event",
                          G_CALLBACK(window_state_event), self);
         g_signal_connect(window, "configure-event", G_CALLBACK(configure_event),
                          self);
       }
     }
-    // GApplication* app = g_application_get_default();
-    // g_signal_connect(app, "command-line", G_CALLBACK(command_line_event),
-    // self); g_signal_connect(app, "open", G_CALLBACK(open_event), self);
-    // Configure minimum size.
+    // Handle `delete-event` signal for window close button interception.
+    g_signal_connect(window, "delete-event", G_CALLBACK(delete_event), self);
     gtk_window_set_default_size(window, kWindowDefaultWidth,
                                 kWindowDefaultHeight);
     GdkGeometry geometry;
