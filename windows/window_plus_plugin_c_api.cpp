@@ -59,7 +59,7 @@ void WindowPlusPluginCApiHandleSingleInstance(const wchar_t class_name[],
       class_name == NULL ? kDefaultWindowClassName : class_name, window_name);
   if (window != NULL) {
     // Show existing |window| and capture the focus.
-    ::ShowWindow(window, SW_NORMAL);
+    ::ShowWindow(window, SW_SHOW);
     ::SetForegroundWindow(window);
     // Send first argument vector element to existing |window| with the help of
     // `WM_COPYDATA` Win32 window proc message.
