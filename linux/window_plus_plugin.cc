@@ -310,8 +310,10 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
   } else if (strcmp(method, kGetStateMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window));
+    GdkWindowState state = gdk_window_get_state(gdk_window);
     gint x = -1, y = -1, width = -1, height = -1;
-    gboolean maximized = gtk_window_is_maximized(window);
+    gboolean maximized = state & GDK_WINDOW_STATE_MAXIMIZED;
     if (!maximized) {
       // Current |window| position & size.
       gtk_window_get_position(window, &x, &y);
