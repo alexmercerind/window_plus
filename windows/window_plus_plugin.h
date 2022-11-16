@@ -33,6 +33,7 @@ class WindowPlusPlugin : public flutter::Plugin {
 
  private:
   // TODO (@alexmercerind): Expose in public API.
+  static constexpr auto kDefaultDPI = 96.0f;
   static constexpr auto kMonitorSafeArea = 8;
   static constexpr auto kWindowDefaultWidth = 1024;
   static constexpr auto kWindowDefaultHeight = 640;
@@ -54,6 +55,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   bool IsWindows10RS5OrGreater();
 
   bool IsFullscreen();
+
+  float GetScaleFactorForWindow();
 
   int32_t GetSystemMetricsForWindow(int32_t index);
 
@@ -85,8 +88,12 @@ class WindowPlusPlugin : public flutter::Plugin {
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ =
       nullptr;
   int64_t window_proc_delegate_id_ = -1;
-  int32_t minimum_width_ = kWindowDefaultMinimumWidth;
-  int32_t minimum_height_ = kWindowDefaultMinimumHeight;
+  // Do not restrict the window size by default.
+  int32_t minimum_width_ = -1;
+  int32_t minimum_height_ = -1;
+  // Default non-DPI aware values.
+  int32_t default_width_ = kWindowDefaultWidth;
+  int32_t default_height_ = kWindowDefaultHeight;
   bool enable_custom_frame_ = false;
   bool enable_event_streams_ = false;
   bool first_frame_rasterized_ = false;

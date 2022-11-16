@@ -24,6 +24,15 @@ WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
   channel_->SetMethodCallHandler([&](const auto& call, auto result) {
     HandleMethodCall(call, std::move(result));
   });
+  // Set default window size & default minimum window size values. DPI aware.
+  minimum_width_ = static_cast<int32_t>(GetScaleFactorForWindow() *
+                                        kWindowDefaultMinimumWidth);
+  minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() *
+                                         kWindowDefaultMinimumHeight);
+  default_width_ =
+      static_cast<int32_t>(GetScaleFactorForWindow() * kWindowDefaultWidth);
+  default_height_ =
+      static_cast<int32_t>(GetScaleFactorForWindow() * kWindowDefaultHeight);
 }
 
 WindowPlusPlugin::~WindowPlusPlugin() {
@@ -102,6 +111,22 @@ bool WindowPlusPlugin::IsFullscreen() {
   return !(::GetWindowLongPtr(GetWindow(), GWL_STYLE) & WS_OVERLAPPEDWINDOW);
 }
 
+float WindowPlusPlugin::GetScaleFactorForWindow() {
+  if (IsWindows10RS1OrGreater()) {
+    auto module = ::GetModuleHandleW(L"User32.dll");
+    if (module) {
+      // Only available for Windows 10 RS1 i.e. Anniversary Update.
+      auto GetDpiForWindow = reinterpret_cast<GetDpiForWindowPtr>(
+          ::GetProcAddress(module, "GetDpiForWindow"));
+      if (GetDpiForWindow) {
+        return static_cast<float>(GetDpiForWindow(GetWindow())) / kDefaultDPI;
+      }
+    }
+  }
+  // Return 1.0f if the function is not available.
+  return 1.0f;
+}
+
 int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
   if (IsWindows10RS1OrGreater()) {
     auto module = ::GetModuleHandleW(L"User32.dll");
@@ -111,7 +136,7 @@ int32_t WindowPlusPlugin::GetSystemMetricsForWindow(int32_t index) {
           ::GetProcAddress(module, "GetSystemMetricsForDpi"));
       auto GetDpiForWindow = reinterpret_cast<GetDpiForWindowPtr>(
           ::GetProcAddress(module, "GetDpiForWindow"));
-      if (GetSystemMetricsForDpi != nullptr && GetDpiForWindow != nullptr) {
+      if (GetSystemMetricsForDpi && GetDpiForWindow) {
         // DPI aware metrics.
         return GetSystemMetricsForDpi(index, GetDpiForWindow(GetWindow()));
       }
@@ -165,10 +190,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
     }
     case WM_GETMINMAXINFO: {
       auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
-      if (minimum_width_ != -1 && minimum_height_ != -1) {
-        info->ptMinTrackSize.x = minimum_width_;
-        info->ptMinTrackSize.y = minimum_height_;
-      }
+      info->ptMinTrackSize.x = minimum_width_;
+      info->ptMinTrackSize.y = minimum_height_;
       return 0;
     }
     case WM_ERASEBKGND: {
@@ -251,7 +274,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
           // params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
         }
       }
-      for (int i = 0; i < 3; i++) {
+      for (int32_t i = 0; i < 3; i++) {
         if ((params->rgrc[i].left < monitor_rect.left) &&
             (params->rgrc[i].top < monitor_rect.top) &&
             (params->rgrc[i].right > monitor_rect.right) &&
@@ -267,12 +290,12 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       // Handle the window in restored state.
       const POINT border = GetDefaultWindowPadding();
       if (::IsZoomed(GetWindow())) {
-        for (int i = 0; i < 3; i++) {
+        for (int32_t i = 0; i < 3; i++) {
           params->rgrc[i].top -= 1;
         }
         // Post |AlignChildContent| implementation.
         if (IsFullscreen()) {
-          for (int i = 0; i < 3; i++) {
+          for (int32_t i = 0; i < 3; i++) {
             params->rgrc[i].top -= border.y;
           }
         }
@@ -542,12 +565,11 @@ void WindowPlusPlugin::HandleMethodCall(
         } else {
           auto monitor = GetMonitorRect(true);
           // If |width| or |height| exceeds the monitor size, then use the
-          // |kWindowDefaultWidth| & |kWindowDefaultHeight|.
-          width = width > (monitor.right - monitor.left) ? kWindowDefaultWidth
-                                                         : width;
-          height = height > (monitor.bottom - monitor.top)
-                       ? kWindowDefaultHeight
-                       : height;
+          // |default_width_| & |default_height_|.
+          width =
+              width > (monitor.right - monitor.left) ? default_width_ : width;
+          height = height > (monitor.bottom - monitor.top) ? default_height_
+                                                           : height;
           ::SetWindowPos(
               GetWindow(), nullptr,
               monitor.left + (monitor.right - monitor.left) / 2 - width / 2,
@@ -560,10 +582,10 @@ void WindowPlusPlugin::HandleMethodCall(
         auto monitor = GetMonitorRect(true);
         ::SetWindowPos(GetWindow(), nullptr,
                        monitor.left + (monitor.right - monitor.left) / 2 -
-                           kWindowDefaultWidth / 2,
+                           default_width_ / 2,
                        monitor.top + (monitor.bottom - monitor.top) / 2 -
-                           kWindowDefaultHeight / 2,
-                       kWindowDefaultWidth, kWindowDefaultHeight, 0);
+                           default_height_ / 2,
+                       default_width_, default_height_, 0);
       }
     } catch (...) {
       // Typically, an instance of |std::bad_variant_access| will be received.
@@ -572,10 +594,10 @@ void WindowPlusPlugin::HandleMethodCall(
       auto monitor = GetMonitorRect(true);
       ::SetWindowPos(GetWindow(), nullptr,
                      monitor.left + (monitor.right - monitor.left) / 2 -
-                         kWindowDefaultWidth / 2,
+                         default_width_ / 2,
                      monitor.top + (monitor.bottom - monitor.top) / 2 -
-                         kWindowDefaultHeight / 2,
-                     kWindowDefaultWidth, kWindowDefaultHeight, 0);
+                         default_height_ / 2,
+                     default_width_, default_height_, 0);
     }
     result->Success(
         flutter::EncodableValue(reinterpret_cast<int64_t>(GetWindow())));
