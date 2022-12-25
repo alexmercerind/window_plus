@@ -10,12 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  meta: ^1.8.0
   path: ^1.8.2
   win32: ^3.0.0
+  safe_local_storage: ^1.0.0
   plugin_platform_interface: ^2.0.2
-  safe_local_storage:
-    git: https://github.com/harmonoid/safe_local_storage.git
-  meta: ^1.8.0
 
 dev_dependencies:
   flutter_test:
