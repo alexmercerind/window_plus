@@ -317,7 +317,7 @@ class Win32Window extends PlatformWindow {
     assert_();
     PostMessage(
       hwnd,
-      WM_DESTROY,
+      WM_NOTIFYDESTROY,
       0,
       0,
     );
