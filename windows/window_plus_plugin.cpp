@@ -7,6 +7,7 @@
 #include "window_plus_plugin.h"
 
 #include <Commctrl.h>
+#include <VersionHelpers.h>
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
@@ -178,10 +179,8 @@ void WindowPlusPlugin::AlignChildContent() {
   }
 }
 
-std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
-                                                            UINT message,
-                                                            WPARAM wparam,
-                                                            LPARAM lparam) {
+std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
+    HWND window, UINT message, WPARAM wparam, LPARAM lparam) noexcept {
   switch (message) {
     // Handle single instance argument vector.
     case WM_COPYDATA: {
@@ -202,6 +201,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
     case WM_CAPTIONAREA: {
       ::ReleaseCapture();
       ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+      break;
     }
     case WM_NCHITTEST: {
       // Window only has client area in fullscreen.
@@ -324,14 +324,25 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       return 0;
     }
     case WM_CLOSE: {
-      try {
-        // Notify Flutter.
-        channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
-                               nullptr);
-        // Returning 0 means that we're handling the message & window won't be
-        // closed, until |WM_DESTROY| is sent.
-      } catch (...) {
-        // Enclosing in try-catch clause to prevent any unhandled exceptions.
+      if (intercept_close_) {
+        try {
+          // Notify Flutter.
+          channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
+                                 nullptr);
+          // Returning 0 means that we're handling the message & window won't be
+          // closed, until |WM_DESTROY| is sent.
+        } catch (...) {
+          // Enclosing in try-catch clause to prevent any unhandled exceptions.
+        }
+        return 0;
+      }
+    }
+    case WM_NOTIFYDESTROY: {
+      intercept_close_ = false;
+      if (!::IsWindows10OrGreater()) {
+        KillProcess();
+      } else {
+        ::DestroyWindow(window);
       }
       return 0;
     }
@@ -340,6 +351,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
       if (enable_event_streams_) {
         channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
       }
+      break;
     }
     case WM_SIZE: {
       AlignChildContent();
@@ -361,7 +373,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window,
 }
 
 std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
-    HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    HWND window, UINT message, WPARAM wparam, LPARAM lparam) noexcept {
   switch (message) {
     // Handle single instance argument vector.
     case WM_COPYDATA: {
@@ -384,16 +396,28 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     case WM_CAPTIONAREA: {
       ::ReleaseCapture();
       ::SendMessage(GetWindow(), WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+      break;
     }
     case WM_CLOSE: {
-      try {
-        // Notify Flutter.
-        channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
-                               nullptr);
-        // Returning 0 means that we're handling the message & window won't be
-        // closed, until |WM_DESTROY| is sent.
-      } catch (...) {
-        // Enclosing in try-catch clause to prevent any unhandled exceptions.
+      if (intercept_close_) {
+        try {
+          // Notify Flutter.
+          channel_->InvokeMethod(kWindowCloseReceivedMethodName, nullptr,
+                                 nullptr);
+          // Returning 0 means that we're handling the message & window won't be
+          // closed, until |WM_DESTROY| is sent.
+        } catch (...) {
+          // Enclosing in try-catch clause to prevent any unhandled exceptions.
+        }
+        return 0;
+      }
+    }
+    case WM_NOTIFYDESTROY: {
+      intercept_close_ = false;
+      if (!::IsWindows10OrGreater()) {
+        KillProcess();
+      } else {
+        ::DestroyWindow(window);
       }
       return 0;
     }
@@ -402,6 +426,7 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
       if (enable_event_streams_) {
         channel_->InvokeMethod(kWindowMovedMethodName, nullptr, nullptr);
       }
+      break;
     }
     case WM_SIZE: {
       AlignChildContent();
@@ -424,7 +449,8 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
 
 LRESULT WindowPlusPlugin::ChildWindowProc(HWND window, UINT message,
                                           WPARAM wparam, LPARAM lparam,
-                                          UINT_PTR id, DWORD_PTR data) {
+                                          UINT_PTR id,
+                                          DWORD_PTR data) noexcept {
   auto plugin = reinterpret_cast<WindowPlusPlugin*>(data);
   switch (message) {
     case WM_NCHITTEST: {
@@ -496,11 +522,11 @@ void WindowPlusPlugin::HandleMethodCall(
                           ChildWindowProc, 1,
                           reinterpret_cast<DWORD_PTR>(this));
       // |DwmExtendFrameIntoClientArea| is working fine with 0 |MARGINS|
-      // on Windows 10 RS5 or greater (build 17763 or greater), giving a decent
-      // "borderless" look with dark borders.
-      // On lower versions of Windows 10, we need one side to be non-zero, makes
-      // window borderless but still keeps 1 pixel border like other windows.
-      // Windows 11 works perfectly fine with 0 |MARGINS|.
+      // on Windows 10 RS5 or greater (build 17763 or greater), giving a
+      // decent "borderless" look with dark borders. On lower versions of
+      // Windows 10, we need one side to be non-zero, makes window borderless
+      // but still keeps 1 pixel border like other windows. Windows 11 works
+      // perfectly fine with 0 |MARGINS|.
       if (IsWindows10RS5OrGreater()) {
         auto margins = MARGINS{0, 0, 0, 0};
         ::DwmExtendFrameIntoClientArea(GetWindow(), &margins);
@@ -534,8 +560,8 @@ void WindowPlusPlugin::HandleMethodCall(
         // auto maximized =
         //     std::get<bool>(data[flutter::EncodableValue("maximized")]);
         // If the window is within any of the available monitor rects, then
-        // alright otherwise, restore it to that position. Otherwise, restore it
-        // to the center of the |monitor|.
+        // alright otherwise, restore it to that position. Otherwise, restore
+        // it to the center of the |monitor|.
         auto is_within_monitor = false;
         auto monitors = GetMonitors();
         for (auto monitor : monitors) {
@@ -627,6 +653,43 @@ void WindowPlusPlugin::HandleMethodCall(
   } else {
     result->NotImplemented();
   }
+}
+
+void WindowPlusPlugin::KillProcess() {
+  auto command =
+      L"taskkill /F /T /PID " + std::to_wstring(GetCurrentProcessId());
+  SECURITY_ATTRIBUTES sa = {0};
+  sa.nLength = sizeof(sa);
+  sa.lpSecurityDescriptor = 0;
+  sa.bInheritHandle = 0;
+  HANDLE handle[4];
+  if (!CreatePipe(&handle[0], &handle[2], &sa, 0)) {
+    // N/A
+  }
+  if (!CreatePipe(&handle[1], &handle[3], &sa, 0)) {
+    // N/A
+  }
+  SetHandleInformation(handle[0], HANDLE_FLAG_INHERIT, 0);
+  SetHandleInformation(handle[1], HANDLE_FLAG_INHERIT, 0);
+  STARTUPINFO si = {0};
+  si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+  si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+  si.hStdOutput = handle[2];
+  si.hStdError = handle[3];
+  si.wShowWindow = SW_HIDE;
+  PROCESS_INFORMATION pi = {0};
+  auto command_line = const_cast<wchar_t*>(command.c_str());
+  if (!::CreateProcessW(0, command_line, 0, 0, true, 0, 0, 0, &si, &pi)) {
+    // N/A
+  } else {
+    // N/A
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+  }
+  CloseHandle(handle[0]);
+  CloseHandle(handle[1]);
+  CloseHandle(handle[2]);
+  CloseHandle(handle[3]);
 }
 
 void WindowPlusPlugin::RegisterWithRegistrar(

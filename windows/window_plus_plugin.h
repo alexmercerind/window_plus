@@ -67,16 +67,18 @@ class WindowPlusPlugin : public flutter::Plugin {
   void AlignChildContent();
 
   std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message,
-                                            WPARAM wparam, LPARAM lparam);
+                                            WPARAM wparam,
+                                            LPARAM lparam) noexcept;
 
   // For Windows lower than 10 RS1, where custom frame isn't used.
   // Does not handle |WM_NCHITTEST| & |WM_NCCALCSIZE| messages.
   std::optional<HRESULT> FallbackWindowProcDelegate(HWND window, UINT message,
                                                     WPARAM wparam,
-                                                    LPARAM lparam);
+                                                    LPARAM lparam) noexcept;
 
   static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
-                                 LPARAM lparam, UINT_PTR id, DWORD_PTR data);
+                                 LPARAM lparam, UINT_PTR id,
+                                 DWORD_PTR data) noexcept;
 
   void SendSingleInstanceData(LPARAM lparam);
 
@@ -84,9 +86,15 @@ class WindowPlusPlugin : public flutter::Plugin {
       const flutter::MethodCall<flutter::EncodableValue>& method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
+  // On Windows 7, the process is not terminated when the window is closed and
+  // the app is not visible. This is a workaround to terminate the process when
+  // the window is closed.
+  void KillProcess();
+
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ =
       nullptr;
+  bool intercept_close_ = true;
   int64_t window_proc_delegate_id_ = -1;
   // Do not restrict the window size by default.
   int32_t minimum_width_ = -1;

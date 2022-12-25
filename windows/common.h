@@ -25,6 +25,7 @@ static constexpr auto kWindows10RS5 = 17763;
 static constexpr auto kDefaultWindowClassName = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
 #define WM_CAPTIONAREA (WM_USER + 0x0009)
+#define WM_NOTIFYDESTROY (WM_USER + 0x000A)
 
 typedef LONG NTSTATUS, *PNTSTATUS;
 #define STATUS_SUCCESS (0x00000000)
