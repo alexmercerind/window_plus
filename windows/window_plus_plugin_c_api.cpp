@@ -58,7 +58,12 @@ void WindowPlusPluginCApiHandleSingleInstance(const wchar_t class_name[],
   auto window = ::FindWindow(
       class_name == NULL ? kDefaultWindowClassName : class_name, window_name);
   if (window != NULL) {
-    // Show existing |window| and capture the focus.
+    auto minimized = ::IsIconic(window);
+    if (minimized) {
+      // We need to un-minimize the window if it is minimized.
+      ::ShowWindow(window, SW_SHOW);
+    }
+    // Capture focus to the window.
     ::SetForegroundWindow(window);
     // Send first argument vector element to existing |window| with the help of
     // `WM_COPYDATA` Win32 window proc message.
