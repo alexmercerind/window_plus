@@ -1,5 +1,7 @@
 # [window+](https://github.com/alexmercerind/window_plus)
 
+> Work in progress. API may change.
+
 As it should be. Extend view into title-bar.
 
 ![0](https://user-images.githubusercontent.com/28951144/201383429-f1dd42bc-e53e-493b-b777-95024788212a.png)
@@ -15,13 +17,13 @@ As it should be. Extend view into title-bar.
 
 ## Features
 
-- [x] Remembering window position & maximize state between application launches.
-- [x] Frameless & customizable title-bar on Windows 10 or higher, with correct resize & movement hit-box.
+- [x] Remembering window position & state at application launch & quit.
+- [x] Frameless & customizable title-bar on Windows 10 RS1 or higher with correct resize & move hit-box.
 - [x] Excellent backward compatibility, till Windows 7 SP1.
 - [x] Fullscreen support.
 - [ ] Overlay & always on-top support.
 - [x] Programmatic maximize, restore, size, move, close & destroy.
-- [x] Subscription to window resize & move.
+- [x] Subscription to window resize, move, minimize, maximize & fullscreen events.
 - [ ] Customizable minimum window size.
 - [x] Multiple monitor(s) compatibility.
 - [x] Single instance support & argument vector (`List<String> args`) forwarding.
@@ -29,9 +31,9 @@ As it should be. Extend view into title-bar.
 - [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
 - [x] Well tested & stable as fuck.
 
-## Docs
+## Reference
 
-Initialize the plugin.
+#### Initializing the plugin
 
 ```dart
 Future<void> main() async {
@@ -40,22 +42,25 @@ Future<void> main() async {
   await WindowPlus.ensureInitialized(
     /// Pass a unique identifier for your application.
     application: 'com.alexmercerind.window_plus',
+    /// Optional: 
+    enableCustomFrame: true,     // true by default on Windows 10 RS1 or higher.
+    enableEventStreams: false,    // true by default.
   );
 }
 ```
 
-Intercept window close event.
+#### Intercepting window close event
 
 ```dart
 WindowPlus.instance.setWindowCloseHandler(() async {
   /// Show alert to the user. Likely if some operation is pending.
   /// Perform clean-up.
-  final bool shouldClose = await doSomethingBeforeClose();
-  return shouldClose;
+  final bool canWindowClose = await doSomethingBeforeClose();
+  return canWindowClose;
 });
 ```
 
-Receive single instance arguments.
+#### Receiving single instance arguments
 
 ```dart
 WindowPlus.instance.setSingleInstanceArgumentsHandler((List<String> args) {
@@ -63,13 +68,13 @@ WindowPlus.instance.setSingleInstanceArgumentsHandler((List<String> args) {
 });
 ```
 
-Enter or leave fullscreen.
+#### Entering or leaving fullscreen
 
 ```dart
 WindowPlus.instance.setIsFullscreen(true);
 ```
 
-Programmatic window control.
+#### Programmatically controlling window
 
 ```dart
 
@@ -78,6 +83,12 @@ Programmatic window control.
 WindowPlus.instance.minimize();
 WindowPlus.instance.maximize();
 WindowPlus.instance.restore();
+
+WindowPlus.instance.move(40, 40);
+WindowPlus.instance.resize(640, 480);
+
+WindowPlus.instance.show();
+WindowPlus.instance.hide();
 
 /// Close the window.
 /// [WindowPlus.instance.setWindowCloseHandler] may be used to intercept the action.
@@ -88,25 +99,23 @@ WindowPlus.instance.close();
 
 WindowPlus.instance.destroy();
 
-WindowPlus.instance.move(40, 40);
-WindowPlus.instance.resize(640, 480);
-
-WindowPlus.instance.show();
-WindowPlus.instance.hide();
-
 /// Query.
 final bool maximized = await WindowPlus.instance.maximized;
 final bool minimized = await WindowPlus.instance.minimized;
 final bool fullscreen = await WindowPlus.instance.fullscreen;
 final Rect size = await WindowPlus.instance.size;
 final Offset position = await WindowPlus.instance.position;
+```
 
+#### Fetching available monitors
+
+```dart
 /// Get all the available monitors.
 
 final List<Monitor> monitors = await WindowPlus.instance.monitors;
 ```
 
-Subscribe to window events.
+#### Subscribing to window events
 
 ```dart
 
@@ -132,7 +141,7 @@ WindowPlus.instance.positionStream.listen((Offset position) {
 
 ```
 
-Display custom title-bar (on Windows 10 or higher).
+#### Displaying custom title-bar
 
 *1. Default Windows look.*
 
@@ -151,8 +160,9 @@ Display custom title-bar (on Windows 10 or higher).
             /// It's height can be accessed using [WindowPlus.instance.captionHeight].
             /// Only shows on Windows 10 or higher. On lower Windows versions, the default window frame is kept. Thus, no need for rendering second one.
             WindowCaption(
-              brightness: Brightness.dark,
               /// Optionally, [brightness] may be set to make window controls white or black (as default Windows 10+ design does).
+              /// By default, this is decided by [MediaQuery].
+              brightness: Brightness.dark,
               /// A [child] may be passed to render custom content in the title-bar.
             ),
           ],
@@ -164,8 +174,13 @@ Display custom title-bar (on Windows 10 or higher).
 
 *2. Custom look.*
 
-See, `WindowCaptionArea`, `WindowMinimizeButton`, `WindowMaximizeButton`, `WindowRestoreButton`, `WindowCloseButton` or `WindowRestoreMaximizeButton`.
-You can also make your own custom `Widget`s which follow your own design language.
+You may compose your own window title-bar & controls. See following widgets for reference:
+- `WindowCaptionArea`
+- `WindowMinimizeButton`
+- `WindowMaximizeButton`
+- `WindowRestoreButton`
+- `WindowCloseButton`
+- `WindowRestoreMaximizeButton`
 
 ## Setup
 
@@ -213,7 +228,7 @@ Edit `linux/my_application.cc` as:
 +  gtk_widget_realize(GTK_WIDGET(view));
    gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
    fl_register_plugins(FL_PLUGIN_REGISTRY(view));
--   gtk_widget_grab_focus(GTK_WIDGET(view));
+-  gtk_widget_grab_focus(GTK_WIDGET(view));
 ```
 
 ## Single Instance
@@ -235,7 +250,7 @@ In `windows/runner/main.cpp`, add the following code:
 
   int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                         _In_ wchar_t* command_line, _In_ int show_command) {
-+   WindowPlusPluginCApiHandleSingleInstance(NULL, NULL);
++   ::WindowPlusPluginCApiHandleSingleInstance(NULL, NULL);
 
     // Attach to console when present (e.g., 'flutter run') or create a
     // new console when running with a debugger.
@@ -261,26 +276,27 @@ Finally, forward the arguments to Dart / Flutter, with [`window_plus_plugin_hand
 
 ## Why
 
-Currently, `package:window_plus` is made to leverage requirements of [Harmonoid](https://github.com/harmonoid/harmonoid).
+[`package:window_plus`](https://github.com/alexmercerind/window_plus) is made to leverage requirements of [Harmonoid](https://github.com/harmonoid/harmonoid).
 
 Initially, [Harmonoid](https://github.com/harmonoid/harmonoid) used [`package:bitsdojo_window`](https://github.com/bitsdojo/bitsdojo_window) for a _modern-looking window_ on Windows.
 However, as time went by a number of issues were faced like:
 
-- Resize borders lying inside the window (which made `Widget`s near window edges impossible to interract e.g. scrollbar)
+- Resize hit-box inside window (which made `Widget`s near window borders hard to interract e.g. scrollbar)
 - Windows 7 support.
 - Other stability & crash issues.
 
-I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's "not the trend" (see: Discord, Visual Studio Code or Spotify). I believe for ensuring compatibility with _all_ Desktop Environments like KDE, XFCE, Gnome & other tiling ones, best is to customize the native window behavior as less as possible. On the other hand, most GNU/Linux Desktop Environments offer various customization options e.g. for changing window buttons, frames, borders & their style / position anyway, this will be unusable after implementing a custom frame.
-
-This gave birth to [my fork](https://github.com/alexmercerind/bitsdojo_window), after mending things in a dirty manner (partially due to the fact that my style of writing code is different), the code became spaghetti & now it's something I can no longer trust.
-
-Now `package:window_plus` is more cleaner (follows [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)) & has additional features like:
+This gave birth to [my fork of `package:bitsdojo_window`](https://github.com/alexmercerind/bitsdojo_window), where I fixed various issues I discovered. However, after mending things in a dirty manner (partially due to the fact that my style of writing code is different), the code became really spaghetti & now it's something I can no longer trust. Thus, I decided to create [`package:window_plus`](https://github.com/alexmercerind/window_plus) which is far more cleaner (follows [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)), correctly implemented & offers additional features like:
 
 - Ability to intercept window close event.
 - Remembering window position & state.
+- Fullscreen support.
+
+I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's _"not the trend"_. See: Discord, Visual Studio Code or Spotify. I believe ensuring compatibility with _all_ desktop environments like KDE, XFCE, GNOME & other tiling ones is far more important. So, best is to customize the native window behavior as less as possible on Linux. On the other hand, most GNU/Linux desktop environments offer various customization options for changing window controls' style/position, window's frame/border etc. anyway. This functionality of host OS would be unusable after implementing a custom frame & rendering custom title bar with Flutter.
+
 
 Stability & correct implementation is the primary concern here.
-Now, this package _i.e._ `package:window_plus` can serve as a starting point for applications other than [Harmonoid](https://github.com/harmonoid/harmonoid).
+
+Now, _i.e._ [`package:window_plus`](https://github.com/alexmercerind/window_plus) can serve as a starting point for applications other than [Harmonoid](https://github.com/harmonoid/harmonoid).
 
 ## License
 
