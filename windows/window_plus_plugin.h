@@ -35,8 +35,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   // TODO (@alexmercerind): Expose in public API.
   static constexpr auto kDefaultDPI = 96.0f;
   static constexpr auto kMonitorSafeArea = 8;
-  static constexpr auto kWindowDefaultWidth = 1024;
-  static constexpr auto kWindowDefaultHeight = 640;
+  static constexpr auto kWindowDefaultWidth = 1280;
+  static constexpr auto kWindowDefaultHeight = 720;
   static constexpr auto kWindowDefaultMinimumWidth = 960;
   static constexpr auto kWindowDefaultMinimumHeight = 640;
 
@@ -61,6 +61,10 @@ class WindowPlusPlugin : public flutter::Plugin {
   int32_t GetSystemMetricsForWindow(int32_t index);
 
   POINT GetDefaultWindowPadding();
+
+  int32_t GetDefaultWindowWidth();
+
+  int32_t GetDefaultWindowHeight();
 
   // Replaces the existing |MoveWindow| behavior in Windows runner template to
   // be more friendly to custom title-bar and frameless windows.
@@ -96,12 +100,15 @@ class WindowPlusPlugin : public flutter::Plugin {
       nullptr;
   bool intercept_close_ = true;
   int64_t window_proc_delegate_id_ = -1;
+
   // Do not restrict the window size by default.
   int32_t minimum_width_ = -1;
   int32_t minimum_height_ = -1;
+
   // Default non-DPI aware values.
-  int32_t default_width_ = kWindowDefaultWidth;
-  int32_t default_height_ = kWindowDefaultHeight;
+  int32_t default_width_ = 1280;
+  int32_t default_height_ = 720;
+
   bool enable_custom_frame_ = false;
   bool enable_event_streams_ = false;
   bool first_frame_rasterized_ = false;

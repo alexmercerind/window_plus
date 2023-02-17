@@ -30,10 +30,8 @@ WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
                                         kWindowDefaultMinimumWidth);
   minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() *
                                          kWindowDefaultMinimumHeight);
-  default_width_ =
-      static_cast<int32_t>(GetScaleFactorForWindow() * kWindowDefaultWidth);
-  default_height_ =
-      static_cast<int32_t>(GetScaleFactorForWindow() * kWindowDefaultHeight);
+  default_width_ = GetDefaultWindowWidth();
+  default_height_ = GetDefaultWindowHeight();
 }
 
 WindowPlusPlugin::~WindowPlusPlugin() {
@@ -153,6 +151,38 @@ POINT WindowPlusPlugin::GetDefaultWindowPadding() {
   auto y = GetSystemMetricsForWindow(SM_CYFRAME) +
            GetSystemMetricsForWindow(SM_CXPADDEDBORDER);
   return POINT{x, y};
+}
+
+int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
+  // Get the current monitor width excluding the taskbar.
+  auto rect = GetMonitorRect(true);
+  rect.right -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  rect.bottom -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  auto monitor_width = static_cast<int32_t>(rect.right - rect.left);
+
+  // Use 1280 as default width & clamp it to the monitor width.
+  auto width =
+      static_cast<int32_t>(kWindowDefaultWidth * GetScaleFactorForWindow());
+  if (width > monitor_width) {
+    width = monitor_width;
+  }
+  return width;
+}
+
+int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
+  // Get the current monitor height excluding the taskbar.
+  auto rect = GetMonitorRect(true);
+  rect.right -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  rect.bottom -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  auto monitor_height = static_cast<int32_t>(rect.bottom - rect.top);
+
+  // Use 720 as default height & clamp it to the monitor height.
+  auto height =
+      static_cast<int32_t>(kWindowDefaultHeight * GetScaleFactorForWindow());
+  if (height > monitor_height) {
+    height = monitor_height;
+  }
+  return height;
 }
 
 void WindowPlusPlugin::AlignChildContent() {
@@ -663,17 +693,17 @@ void WindowPlusPlugin::KillProcess() {
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = 0;
   HANDLE handle[4];
-  if (!CreatePipe(&handle[0], &handle[2], &sa, 0)) {
+  if (!::CreatePipe(&handle[0], &handle[2], &sa, 0)) {
     // N/A
   }
-  if (!CreatePipe(&handle[1], &handle[3], &sa, 0)) {
+  if (!::CreatePipe(&handle[1], &handle[3], &sa, 0)) {
     // N/A
   }
-  SetHandleInformation(handle[0], HANDLE_FLAG_INHERIT, 0);
-  SetHandleInformation(handle[1], HANDLE_FLAG_INHERIT, 0);
+  ::SetHandleInformation(handle[0], HANDLE_FLAG_INHERIT, 0);
+  ::SetHandleInformation(handle[1], HANDLE_FLAG_INHERIT, 0);
   STARTUPINFO si = {0};
   si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-  si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+  si.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
   si.hStdOutput = handle[2];
   si.hStdError = handle[3];
   si.wShowWindow = SW_HIDE;
@@ -683,13 +713,13 @@ void WindowPlusPlugin::KillProcess() {
     // N/A
   } else {
     // N/A
-    CloseHandle(pi.hThread);
-    CloseHandle(pi.hProcess);
+    ::CloseHandle(pi.hThread);
+    ::CloseHandle(pi.hProcess);
   }
-  CloseHandle(handle[0]);
-  CloseHandle(handle[1]);
-  CloseHandle(handle[2]);
-  CloseHandle(handle[3]);
+  ::CloseHandle(handle[0]);
+  ::CloseHandle(handle[1]);
+  ::CloseHandle(handle[2]);
+  ::CloseHandle(handle[3]);
 }
 
 void WindowPlusPlugin::RegisterWithRegistrar(

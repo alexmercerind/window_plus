@@ -92,7 +92,7 @@ class _MyAppState extends State<MyApp> {
           style: TextButton.styleFrom(
             textStyle: TextStyle(
               fontFamily: Platform.isLinux ? 'Inter' : null,
-              letterSpacing: 1.8,
+              letterSpacing: 1.0,
               fontWeight: Platform.isLinux ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
