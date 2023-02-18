@@ -217,6 +217,13 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
       SendSingleInstanceData(lparam);
       break;
     }
+    case WM_ACTIVATE: {
+      // Notify Flutter.
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowActivatedMethodName, nullptr, nullptr);
+      }
+      break;
+    }
     case WM_GETMINMAXINFO: {
       auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       info->ptMinTrackSize.x = minimum_width_;
@@ -408,6 +415,13 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     // Handle single instance argument vector.
     case WM_COPYDATA: {
       SendSingleInstanceData(lparam);
+      break;
+    }
+    case WM_ACTIVATE: {
+      // Notify Flutter.
+      if (enable_event_streams_) {
+        channel_->InvokeMethod(kWindowActivatedMethodName, nullptr, nullptr);
+      }
       break;
     }
     case WM_GETMINMAXINFO: {

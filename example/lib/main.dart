@@ -169,6 +169,14 @@ class _MyAppState extends State<MyApp> {
                             children: [
                               const SizedBox(width: 16.0),
                               TextButton(
+                                onPressed: WindowPlus.instance.activate,
+                                child: const Text('ACTIVATE'),
+                              ),
+                              TextButton(
+                                onPressed: WindowPlus.instance.deactivate,
+                                child: const Text('DEACTIVATE'),
+                              ),
+                              TextButton(
                                 onPressed: WindowPlus.instance.minimize,
                                 child: const Text('MINIMIZE'),
                               ),
@@ -209,6 +217,17 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                   Text(
                                     'captionPadding: ${WindowPlus.instance.captionPadding}',
+                                  ),
+                                  StreamBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'activatedStream: null',
+                                              )
+                                            : Text(
+                                                'activatedStream: ${snapshot.data.toString()}',
+                                              ),
+                                    stream: WindowPlus.instance.activatedStream,
                                   ),
                                   StreamBuilder(
                                     builder: (context, snapshot) =>
@@ -265,6 +284,17 @@ class _MyAppState extends State<MyApp> {
                                                 'positionStream: ${snapshot.data.toString()}',
                                               ),
                                     stream: WindowPlus.instance.positionStream,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) =>
+                                        !snapshot.hasData
+                                            ? const Text(
+                                                'activated: null',
+                                              )
+                                            : Text(
+                                                'activated: ${snapshot.data.toString()}',
+                                              ),
+                                    future: WindowPlus.instance.activated,
                                   ),
                                   FutureBuilder(
                                     builder: (context, snapshot) =>

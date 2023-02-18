@@ -19,8 +19,13 @@ abstract class PlatformWindow extends WindowState {
     required super.enableEventStreams,
   });
 
-  /// Whether the window is minimized.
+  /// Whether the window is activated.
+  @alwaysThrows
+  Future<bool> get activated async {
+    throw UnimplementedError();
+  }
 
+  /// Whether the window is minimized.
   @alwaysThrows
   Future<bool> get minimized async {
     throw UnimplementedError();
@@ -49,6 +54,12 @@ abstract class PlatformWindow extends WindowState {
   Future<Rect> get size async {
     throw UnimplementedError();
   }
+
+  /// Stream to listen to the window's [activated] state.
+  Stream<bool> get activatedStream => activatedStreamController.stream;
+
+  StreamController<bool> activatedStreamController =
+      StreamController<bool>.broadcast();
 
   /// Stream to listen to the window's [minimized] state.
   Stream<bool> get minimizedStream => minimizedStreamController.stream;
@@ -178,6 +189,18 @@ abstract class PlatformWindow extends WindowState {
   /// Minimizes the window holding Flutter view.
   @alwaysThrows
   Future<void> minimize() async {
+    throw UnimplementedError();
+  }
+
+  /// Activates the window holding Flutter view.
+  @alwaysThrows
+  Future<void> activate() async {
+    throw UnimplementedError();
+  }
+
+  /// Deactivates the window holding Flutter view.
+  @alwaysThrows
+  Future<void> deactivate() async {
     throw UnimplementedError();
   }
 
