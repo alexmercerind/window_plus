@@ -15,6 +15,7 @@ static constexpr auto kNotifyFirstFrameRasterizedMethodName =
     "notifyFirstFrameRasterized";
 static constexpr auto kWindowMovedMethodName = "windowMoved";
 static constexpr auto kWindowResizedMethodName = "windowResized";
+static constexpr auto kWindowActivatedMethodName = "windowActivated";
 static constexpr auto kSingleInstanceDataReceivedMethodName =
     "singleInstanceDataReceived";
 static constexpr auto kWindows10RTM = 10240;

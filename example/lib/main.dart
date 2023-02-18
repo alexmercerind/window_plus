@@ -156,6 +156,14 @@ class _MyAppState extends State<MyApp> {
                             children: [
                               const SizedBox(width: 16.0),
                               TextButton(
+                                onPressed: WindowPlus.instance.activate,
+                                child: const Text('activate'),
+                              ),
+                              TextButton(
+                                onPressed: WindowPlus.instance.deactivate,
+                                child: const Text('deactivate'),
+                              ),
+                              TextButton(
                                 onPressed: WindowPlus.instance.minimize,
                                 child: const Text('minimize'),
                               ),
@@ -199,6 +207,12 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                   StreamBuilder(
                                     builder: (context, snapshot) => Text(
+                                      'activatedStream: ${snapshot.data}',
+                                    ),
+                                    stream: WindowPlus.instance.activatedStream,
+                                  ),
+                                  StreamBuilder(
+                                    builder: (context, snapshot) => Text(
                                       'minimizedStream: ${snapshot.data}',
                                     ),
                                     stream: WindowPlus.instance.minimizedStream,
@@ -227,6 +241,12 @@ class _MyAppState extends State<MyApp> {
                                       'positionStream: ${snapshot.data}',
                                     ),
                                     stream: WindowPlus.instance.positionStream,
+                                  ),
+                                  FutureBuilder(
+                                    builder: (context, snapshot) => Text(
+                                      'activated: ${snapshot.data}',
+                                    ),
+                                    future: WindowPlus.instance.activated,
                                   ),
                                   FutureBuilder(
                                     builder: (context, snapshot) => Text(

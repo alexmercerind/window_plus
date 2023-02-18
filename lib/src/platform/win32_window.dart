@@ -31,6 +31,18 @@ class Win32Window extends PlatformWindow {
   @override
   Future<dynamic> methodCallHandler(MethodCall call) async {
     switch (call.method) {
+      case kWindowActivatedMethodName:
+        {
+          try {
+            activatedStreamController.add(await activated);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
+          } catch (exception, stacktrace) {
+            debugPrint(exception.toString());
+            debugPrint(stacktrace.toString());
+          }
+          break;
+        }
       case kWindowMovedMethodName:
         {
           try {
@@ -91,6 +103,13 @@ class Win32Window extends PlatformWindow {
           break;
         }
     }
+  }
+
+  /// Whether the window is activated.
+  @override
+  Future<bool> get activated async {
+    assert_();
+    return GetForegroundWindow() == hwnd;
   }
 
   /// Whether the window is minimized.
@@ -277,6 +296,45 @@ class Win32Window extends PlatformWindow {
       SC_RESTORE,
       0,
     );
+  }
+
+  /// Activates the window holding Flutter view.
+  @override
+  Future<void> activate() async {
+    assert_();
+    if (await minimized) {
+      await restore();
+    }
+    SetForegroundWindow(hwnd);
+  }
+
+  /// Deactivates the window holding Flutter view.
+  @override
+  Future<void> deactivate() async {
+    assert_();
+    int next_hwnd = GetWindow(hwnd, GW_HWNDNEXT);
+    while (next_hwnd != hwnd) {
+      if (IsWindowVisible(next_hwnd) == TRUE) {
+        final cloaked = calloc<Int>();
+        final dwmWindowAttribute = DwmGetWindowAttribute(next_hwnd, 
+          DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, 
+          cloaked, 
+          sizeOf<Int>(),
+        );
+        if (dwmWindowAttribute != S_OK)
+        {
+          cloaked.value = 0;
+        }
+        if (cloaked.value == 0){
+          SetForegroundWindow(next_hwnd);
+          free(cloaked);
+          return;
+        }
+        free(cloaked);
+      }
+      next_hwnd = GetWindow(next_hwnd, GW_HWNDNEXT);
+    }
+    SetForegroundWindow(GetDesktopWindow());
   }
 
   /// Minimizes the window holding Flutter view.
