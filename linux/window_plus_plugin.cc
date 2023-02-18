@@ -9,8 +9,9 @@
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
 
-#include <iostream>
 #include <thread>
+
+// TODO(@alexmercerind): Refactor to use GObject.
 
 static constexpr auto kMethodChannelName = "com.alexmercerind/window_plus";
 
@@ -21,10 +22,8 @@ static constexpr auto kCloseMethodName = "close";
 static constexpr auto kDestroyMethodName = "destroy";
 
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
-static constexpr auto kSingleInstanceDataReceivedMethodName =
-    "singleInstanceDataReceived";
-static constexpr auto kNotifyFirstFrameRasterizedMethodName =
-    "notifyFirstFrameRasterized";
+static constexpr auto kSingleInstanceDataReceivedMethodName = "singleInstanceDataReceived";
+static constexpr auto kNotifyFirstFrameRasterizedMethodName = "notifyFirstFrameRasterized";
 
 // GTK Exclusives:
 
@@ -46,16 +45,14 @@ static constexpr auto kResizeMethodName = "resize";
 static constexpr auto kHideMethodName = "hide";
 static constexpr auto kShowMethodName = "show";
 
-static constexpr auto kWindowStateEventReceivedMethodName =
-    "windowStateEventReceived";
-static constexpr auto kConfigureEventReceivedMethodName =
-    "configureEventReceived";
+static constexpr auto kWindowStateEventReceivedMethodName = "windowStateEventReceived";
+static constexpr auto kConfigureEventReceivedMethodName = "configureEventReceived";
 
 // TODO (@alexmercerind): Expose in public API.
 
 static constexpr auto kMonitorSafeArea = 8;
-static constexpr auto kWindowDefaultWidth = 1024;
-static constexpr auto kWindowDefaultHeight = 640;
+static constexpr auto kWindowDefaultWidth = 1280;
+static constexpr auto kWindowDefaultHeight = 720;
 static constexpr auto kWindowDefaultMinimumWidth = 960;
 static constexpr auto kWindowDefaultMinimumHeight = 640;
 
@@ -80,6 +77,42 @@ static GdkPoint get_cursor_position() {
   GdkPoint position = GdkPoint{0, 0};
   gdk_device_get_position(device, NULL, &position.x, &position.y);
   return position;
+}
+
+static gint get_default_window_width() {
+  GdkPoint cursor = get_cursor_position();
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor =
+      gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+  GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+  gdk_monitor_get_workarea(monitor, &workarea);
+  gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                       workarea.width == 0 && workarea.height == 0);
+  if (success) {
+    gint monitor_width = workarea.width - 48;
+    if (kWindowDefaultWidth > monitor_width) {
+      return monitor_width;
+    }
+  }
+  return kWindowDefaultWidth;
+}
+
+static gint get_default_window_height() {
+  GdkPoint cursor = get_cursor_position();
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor =
+      gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+  GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
+  gdk_monitor_get_workarea(monitor, &workarea);
+  gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
+                       workarea.width == 0 && workarea.height == 0);
+  if (success) {
+    gint monitor_height = workarea.height - 48;
+    if (kWindowDefaultHeight > monitor_height) {
+      return monitor_height;
+    }
+  }
+  return kWindowDefaultHeight;
 }
 
 static gboolean delete_event(GtkWidget* self, GdkEvent* event,
@@ -151,13 +184,14 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     }
     // Handle `delete-event` signal for window close button interception.
     g_signal_connect(window, "delete-event", G_CALLBACK(delete_event), self);
-    gtk_window_set_default_size(window, kWindowDefaultWidth,
-                                kWindowDefaultHeight);
+    gint default_width = get_default_window_width(),
+         default_height = get_default_window_height();
+    gtk_window_set_default_size(window, default_width, default_height);
     GdkGeometry geometry;
     geometry.min_width = kWindowDefaultMinimumWidth;
     geometry.min_height = kWindowDefaultMinimumHeight;
-    geometry.base_width = kWindowDefaultWidth;
-    geometry.base_height = kWindowDefaultHeight;
+    geometry.base_width = default_width;
+    geometry.base_height = default_height;
     gtk_window_set_geometry_hints(
         window, GTK_WIDGET(window), &geometry,
         static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE));
@@ -200,9 +234,8 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
                                workarea.width == 0 && workarea.height == 0);
           if (success) {
-            std::cout << "GdkRectangle{ " << workarea.x << ", " << workarea.y
-                      << ", " << workarea.width << ", " << workarea.height
-                      << " }" << std::endl;
+            g_print("GdkRectangle{ %d, %d, %d, %d }\n", workarea.x, workarea.y,
+                    workarea.width, workarea.height);
             if (!is_within_monitor) {
               gint monitor_left = workarea.x, monitor_top = workarea.y,
                    monitor_right = workarea.x + workarea.width,
@@ -213,7 +246,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
               monitor_bottom -= kMonitorSafeArea;
               if (x > monitor_left && x + width < monitor_right &&
                   y > monitor_top && y + height < monitor_bottom) {
-                std::cout << "GtkWindow within bounds." << std::endl;
+                g_print("GtkWindow within bounds.\n");
                 is_within_monitor = TRUE;
               }
             }
@@ -231,22 +264,13 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
               gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
           GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
           gdk_monitor_get_workarea(monitor, &workarea);
-          gint monitor_left = workarea.x, monitor_top = workarea.y,
-               monitor_right = workarea.x + workarea.width,
-               monitor_bottom = workarea.y + workarea.height;
           gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
                                workarea.width == 0 && workarea.height == 0);
           if (success) {
             // Make sure to clamp ignore |width| & |height| if they exceed the
-            // current workarea dimensions and use |kWindowDefaultWidth| &
-            // |kWindowDefaultHeight| instead.
-            width = width > workarea.width ? kWindowDefaultWidth : width;
-            height = height > workarea.height ? kWindowDefaultHeight : height;
-            gtk_window_resize(window, width, height);
-            gtk_window_move(
-                window,
-                monitor_left + (monitor_right - monitor_left) / 2 - width / 2,
-                monitor_top + (monitor_bottom - monitor_top) / 2 - height / 2);
+            // current workarea dimensions and use default dimensions instead.
+            gtk_window_resize(window, default_width, default_height);
+            gtk_window_set_position(window, GTK_WIN_POS_CENTER);
           }
         }
         // Maximize the |window| if it was maximized when it was closed.
@@ -263,18 +287,13 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
             gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
         GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
         gdk_monitor_get_workarea(monitor, &workarea);
-        gint monitor_left = workarea.x, monitor_top = workarea.y,
-             monitor_right = workarea.x + workarea.width,
-             monitor_bottom = workarea.y + workarea.height;
         gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
                              workarea.width == 0 && workarea.height == 0);
         if (success) {
-          gtk_window_resize(window, kWindowDefaultWidth, kWindowDefaultHeight);
-          gtk_window_move(window,
-                          monitor_left + (monitor_right - monitor_left) / 2 -
-                              kWindowDefaultWidth / 2,
-                          monitor_top + (monitor_bottom - monitor_top) / 2 -
-                              kWindowDefaultHeight / 2);
+          // Make sure to clamp ignore |width| & |height| if they exceed the
+          // current workarea dimensions and use default dimensions instead.
+          gtk_window_resize(window, default_width, default_height);
+          gtk_window_set_position(window, GTK_WIN_POS_CENTER);
         }
       }
     } catch (...) {
@@ -287,18 +306,13 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
       GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
       gdk_monitor_get_workarea(monitor, &workarea);
-      gint monitor_left = workarea.x, monitor_top = workarea.y,
-           monitor_right = workarea.x + workarea.width,
-           monitor_bottom = workarea.y + workarea.height;
       gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
                            workarea.width == 0 && workarea.height == 0);
       if (success) {
-        gtk_window_resize(window, kWindowDefaultWidth, kWindowDefaultHeight);
-        gtk_window_move(window,
-                        monitor_left + (monitor_right - monitor_left) / 2 -
-                            kWindowDefaultWidth / 2,
-                        monitor_top + (monitor_bottom - monitor_top) / 2 -
-                            kWindowDefaultHeight / 2);
+        // Make sure to clamp ignore |width| & |height| if they exceed the
+        // current workarea dimensions and use default dimensions instead.
+        gtk_window_resize(window, default_width, default_height);
+        gtk_window_set_position(window, GTK_WIN_POS_CENTER);
       }
     }
     // Show the Flutter |view| & |window|.
