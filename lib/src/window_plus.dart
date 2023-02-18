@@ -30,18 +30,16 @@ import 'package:window_plus/src/platform/platform_window.dart';
 /// ```
 ///
 class WindowPlus {
-  /// Globally accessible singleton [instance] of [WindowPlus].
-  static PlatformWindow get instance {
-    if (_instance == null) {
-      assert(
-        false,
-        '[WindowPlus.instance] is not initialized. Call [WindowPlus.ensureInitialized] before accessing the singleton [instance].',
-      );
-    }
-    return _instance!;
-  }
+  /// [WindowPlus] singleton instance.
 
-  static PlatformWindow? _instance;
+  // This is liskov substituted with the platform specific instance e.g.
+  // [Win32Window] or [GTKWindow] in [ensureInitialized].
+  // It avoids any redundant null check errors at runtime.
+  static PlatformWindow instance = PlatformWindow(
+    application: 'com.window_plus.uninitialized',
+    enableCustomFrame: false,
+    enableEventStreams: false,
+  );
 
   /// Initializes the [WindowPlus] instance for use.
   ///
@@ -55,35 +53,35 @@ class WindowPlus {
   /// RS1 (Anniversary Update) or higher (i.e. Windows 10 & 11). Enabling this on
   /// older Windows versions may result in undefined behaviors & thus not recommended.
   ///
-  /// [enableEventStreams] argument decides whether [Stream]s should be enabled for
-  /// listening to window state changes e.g. minimize, maximize, restore, position, size, etc.
-  /// It is `true` by default. Disabling this should be considered if this ability is not
-  /// needed. This may yield performance improvements.
+  /// [enableEventStreams] argument decides whether [Stream]s should be enabled
+  /// for listening to window state changes e.g. minimize, maximize, restore,
+  /// position, size, etc. It is `true` by default. Disabling this should be
+  /// considered if this ability is not needed. This may yield performance improvements.
   ///
   static Future<void> ensureInitialized({
     required String application,
     bool? enableCustomFrame,
     bool? enableEventStreams,
-  }) {
+  }) async {
     // Default values.
     enableCustomFrame ??= WindowsInfo.instance.isWindows10RS1OrGreater;
     enableEventStreams ??= true;
     // Platform specific polymorphic initialization.
     if (Platform.isWindows) {
-      _instance = Win32Window(
+      instance = Win32Window(
         application: application,
         enableCustomFrame: enableCustomFrame,
         enableEventStreams: enableEventStreams,
       );
+      await instance.initialize();
     }
     if (Platform.isLinux) {
-      _instance = GTKWindow(
+      instance = GTKWindow(
         application: application,
         enableCustomFrame: enableCustomFrame,
         enableEventStreams: enableEventStreams,
       );
+      await instance.initialize();
     }
-    // TODO: Add support for other platforms.
-    return _instance?.initialize() ?? Future.value();
   }
 }

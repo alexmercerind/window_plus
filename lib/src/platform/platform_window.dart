@@ -12,7 +12,7 @@ import 'package:window_plus/src/window_state.dart';
 import 'package:window_plus/src/models/monitor.dart';
 
 /// An interface to handle the public methods of [WindowPlus].
-abstract class PlatformWindow extends WindowState {
+class PlatformWindow extends WindowState {
   PlatformWindow({
     required super.application,
     required super.enableCustomFrame,
