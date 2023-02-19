@@ -67,6 +67,18 @@ class Win32Window extends PlatformWindow {
           }
           break;
         }
+      case kWindowFullScreenMethodName:
+        {
+          try {
+            fullscreenStreamController.add(await fullscreen);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
+          } catch (exception, stacktrace) {
+            debugPrint(exception.toString());
+            debugPrint(stacktrace.toString());
+          }
+          break;
+        }
       case kSingleInstanceDataReceivedMethodName:
         {
           try {
