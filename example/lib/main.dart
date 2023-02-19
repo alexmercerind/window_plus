@@ -124,8 +124,8 @@ class _MyAppState extends State<MyApp> {
                           width: MediaQuery.of(context).size.width,
                           child: Transform.translate(
                             offset: const Offset(-156.0, -96.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            child: Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.end,
                               children: [
                                 Icon(
                                   Icons.window_outlined,
@@ -152,7 +152,7 @@ class _MyAppState extends State<MyApp> {
                       delegate: SliverChildListDelegate.fixed(
                         [
                           const SizedBox(height: 16.0),
-                          Row(
+                          Wrap(
                             children: [
                               const SizedBox(width: 16.0),
                               TextButton(
@@ -187,7 +187,7 @@ class _MyAppState extends State<MyApp> {
                             ],
                           ),
                           const SizedBox(height: 16.0),
-                          Row(
+                          Wrap(
                             children: [
                               const SizedBox(width: 16.0),
                               Column(
@@ -300,7 +300,7 @@ class _MyAppState extends State<MyApp> {
                             ],
                           ),
                           const SizedBox(height: 16.0),
-                          Row(
+                          Wrap(
                             children: [
                               const SizedBox(width: 16.0),
                               TextButton(
@@ -321,7 +321,7 @@ class _MyAppState extends State<MyApp> {
                             ],
                           ),
                           const SizedBox(height: 16.0),
-                          Row(
+                          Wrap(
                             children: [
                               const SizedBox(width: 16.0),
                               const SizedBox(
@@ -379,7 +379,7 @@ class _MyAppState extends State<MyApp> {
                               const SizedBox(width: 16.0),
                             ],
                           ),
-                          Row(
+                          Wrap(
                             children: [
                               const SizedBox(width: 16.0),
                               const SizedBox(
