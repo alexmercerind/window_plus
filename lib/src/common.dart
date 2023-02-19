@@ -27,6 +27,8 @@ const String kNotifyFirstFrameRasterizedMethodName =
 const String kWindowMovedMethodName = 'windowMoved';
 const String kWindowResizedMethodName = 'windowResized';
 const String kWindowActivatedMethodName = 'windowActivated';
+const String kWindowMinimizedMethodName = 'windowMinimized';
+const String kWindowMaximizedMethodName = 'windowMaximized';
 
 // GTK Exclusives:
 

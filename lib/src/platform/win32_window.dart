@@ -43,6 +43,30 @@ class Win32Window extends PlatformWindow {
           }
           break;
         }
+      case kWindowMinimizedMethodName:
+        {
+          try {
+            minimizedStreamController.add(await minimized);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
+          } catch (exception, stacktrace) {
+            debugPrint(exception.toString());
+            debugPrint(stacktrace.toString());
+          }
+          break;
+        }
+      case kWindowMaximizedMethodName:
+        {
+          try {
+            maximizedStreamController.add(await maximized);
+          } on AssertionError catch (_) {
+            // NOTE: [WindowsPlus.instance.hwnd] is `0` during fresh start until [WindowPlus.ensureInitialized] resolves.
+          } catch (exception, stacktrace) {
+            debugPrint(exception.toString());
+            debugPrint(stacktrace.toString());
+          }
+          break;
+        }
       case kWindowMovedMethodName:
         {
           try {
@@ -316,16 +340,16 @@ class Win32Window extends PlatformWindow {
     while (next_hwnd != hwnd) {
       if (IsWindowVisible(next_hwnd) == TRUE) {
         final cloaked = calloc<Int>();
-        final dwmWindowAttribute = DwmGetWindowAttribute(next_hwnd, 
-          DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, 
-          cloaked, 
+        final dwmWindowAttribute = DwmGetWindowAttribute(
+          next_hwnd,
+          DWMWINDOWATTRIBUTE.DWMWA_CLOAKED,
+          cloaked,
           sizeOf<Int>(),
         );
-        if (dwmWindowAttribute != S_OK)
-        {
+        if (dwmWindowAttribute != S_OK) {
           cloaked.value = 0;
         }
-        if (cloaked.value == 0){
+        if (cloaked.value == 0) {
           SetForegroundWindow(next_hwnd);
           free(cloaked);
           return;
