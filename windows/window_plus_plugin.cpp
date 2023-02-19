@@ -394,6 +394,34 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
       AlignChildContent();
       // Notify Flutter.
       if (enable_event_streams_) {
+        switch (wparam)
+        {
+          case SIZE_MINIMIZED:
+            minimized_ = true;
+            maximized_ = false;
+            channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            return 0;
+          case SIZE_MAXIMIZED:
+            maximized_ = true;
+            if (minimized_) {
+              minimized_ = false;
+              channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            }
+            channel_->InvokeMethod(kWindowMaximizedMethodName, nullptr, nullptr);
+            break;
+          case SIZE_RESTORED:
+            if (minimized_) {
+              minimized_ = false;
+              channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            }
+            else if (maximized_) {
+              maximized_ = false;
+              channel_->InvokeMethod(kWindowMaximizedMethodName, nullptr, nullptr);
+            }
+            break;
+          default:
+            break;
+        }
         channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       }
       return 0;
@@ -476,6 +504,34 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
       AlignChildContent();
       // Notify Flutter.
       if (enable_event_streams_) {
+        switch (wparam)
+        {
+          case SIZE_MINIMIZED:
+            minimized_ = true;
+            maximized_ = false;
+            channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            return 0;
+          case SIZE_MAXIMIZED:
+            maximized_ = true;
+            if (minimized_) {
+              minimized_ = false;
+              channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            }
+            channel_->InvokeMethod(kWindowMaximizedMethodName, nullptr, nullptr);
+            break;
+          case SIZE_RESTORED:
+            if (minimized_) {
+              minimized_ = false;
+              channel_->InvokeMethod(kWindowMinimizedMethodName, nullptr, nullptr);
+            }
+            else if (maximized_) {
+              maximized_ = false;
+              channel_->InvokeMethod(kWindowMaximizedMethodName, nullptr, nullptr);
+            }
+            break;
+          default:
+            break;
+        }
         channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       }
       return 0;

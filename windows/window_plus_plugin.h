@@ -112,6 +112,8 @@ class WindowPlusPlugin : public flutter::Plugin {
   bool enable_custom_frame_ = false;
   bool enable_event_streams_ = false;
   bool first_frame_rasterized_ = false;
+  bool minimized_ = false;
+  bool maximized_ = false;
   // DO NOT ACCESS THIS MEMBER DIRECTLY. Use |GetMonitors| instead.
   std::vector<HMONITOR> monitors_ = {};
 };
