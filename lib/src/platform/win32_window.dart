@@ -134,6 +134,14 @@ class Win32Window extends PlatformWindow {
     return !(style & WS_OVERLAPPEDWINDOW > 0);
   }
 
+  /// Whether the window is always on top.
+  @override
+  Future<bool> get alwaysOnTop async {
+    assert_();
+    final style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    return (style & WS_EX_TOPMOST) > 0;
+  }
+
   /// Gets the position of the window on the screen.
   @override
   Future<Offset> get position async {
@@ -272,6 +280,18 @@ class Win32Window extends PlatformWindow {
         calloc.free(rect);
       }
     }
+  }
+
+  /// Enables or disables the always on top mode.
+  ///
+  /// If [enabled] is `true`, the window will be made topmost.
+  /// Once [enabled] is passed as `false` in future, window will be normal.
+  ///
+  @override
+  Future<void> setIsAlwaysOnTop(bool enabled) async {
+    assert_();
+    final order = enabled ? HWND_TOPMOST : HWND_NOTOPMOST;
+    SetWindowPos(hwnd, order, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
   }
 
   /// Maximizes the window holding Flutter view.

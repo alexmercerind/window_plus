@@ -55,6 +55,12 @@ class PlatformWindow extends WindowState {
     throw UnimplementedError();
   }
 
+  /// Whether the window is always on top.
+  @alwaysThrows
+  Future<bool> get alwaysOnTop async {
+    throw UnimplementedError();
+  }
+
   /// Stream to listen to the window's [activated] state.
   Stream<bool> get activatedStream => activatedStreamController.stream;
 
@@ -162,6 +168,16 @@ class PlatformWindow extends WindowState {
   ///
   void setSingleInstanceArgumentsHandler(void Function(List<String>)? value) {
     singleInstanceArgumentsHandler = value;
+  }
+
+  /// Enables or disables the always on top mode.
+  ///
+  /// If [enabled] is `true`, the window will be made topmost.
+  /// Once [enabled] is passed as `false` in future, window will be normal.
+  ///
+  @alwaysThrows
+  Future<void> setIsAlwaysOnTop(bool enabled) async {
+    throw UnimplementedError();
   }
 
   /// Enables or disables the fullscreen mode.
