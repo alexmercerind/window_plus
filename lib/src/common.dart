@@ -13,6 +13,8 @@ const String kMethodChannelName = 'com.alexmercerind/window_plus';
 // Common:
 
 const String kEnsureInitializedMethodName = 'ensureInitialized';
+const String kGetMinimumSizeMethodName = 'getMinimumSize';
+const String kSetMinimumSizeMethodName = 'setMinimumSize';
 const String kCloseMethodName = 'close';
 const String kDestroyMethodName = 'destroy';
 

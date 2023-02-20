@@ -55,6 +55,12 @@ class PlatformWindow extends WindowState {
     throw UnimplementedError();
   }
 
+  /// Gets the minimum size of the window on the screen.
+  @alwaysThrows
+  Future<Size> get minimumSize async {
+    throw UnimplementedError();
+  }
+
   /// Stream to listen to the window's [activated] state.
   Stream<bool> get activatedStream => activatedStreamController.stream;
 
@@ -171,6 +177,12 @@ class PlatformWindow extends WindowState {
   ///
   @alwaysThrows
   Future<void> setIsFullscreen(bool enabled) async {
+    throw UnimplementedError();
+  }
+
+  /// Sets the minimum size of the window holding Flutter view.
+  @alwaysThrows
+  Future<void> setMinimumSize(Size size) async {
     throw UnimplementedError();
   }
 
