@@ -91,12 +91,6 @@ class PlatformWindow extends WindowState {
   StreamController<Rect> sizeStreamController =
       StreamController<Rect>.broadcast();
 
-  /// Sets the window's fullscreen state.
-  @alwaysThrows
-  Future<void> setFullscreen(bool fullscreen) async {
-    throw UnimplementedError();
-  }
-
   /// Sets a function to handle window close events.
   /// This may be used to intercept the close event and perform some actions before closing the window
   /// or prevent window from being closed completely.
