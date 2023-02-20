@@ -252,7 +252,6 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
           default:
             break;
         }
-        channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
       }
       break;
     }
@@ -484,7 +483,6 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
           default:
             break;
         }
-        channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
       }
       break;
     }
