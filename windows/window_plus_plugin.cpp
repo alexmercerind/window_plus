@@ -708,10 +708,10 @@ void WindowPlusPlugin::HandleMethodCall(
     SetMinimumSize(args);
     result->Success();
   } else if (method_call.method_name().compare(kGetMinimumSizeMethodName) == 0) {
-    auto sizeMap = std::map<flutter::EncodableValue, flutter::EncodableValue>();
-    sizeMap[flutter::EncodableValue("width")] = flutter::EncodableValue(minimum_width_);
-    sizeMap[flutter::EncodableValue("height")] = flutter::EncodableValue(minimum_height_);
-    result->Success(flutter::EncodableValue(sizeMap));
+    auto size_map = std::map<flutter::EncodableValue, flutter::EncodableValue>();
+    size_map[flutter::EncodableValue("width")] = flutter::EncodableValue(minimum_width_);
+    size_map[flutter::EncodableValue("height")] = flutter::EncodableValue(minimum_height_);
+    result->Success(flutter::EncodableValue(size_map));
   } else {
     result->NotImplemented();
   }

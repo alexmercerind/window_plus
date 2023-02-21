@@ -179,14 +179,14 @@ class Win32Window extends PlatformWindow {
 
   /// Sets the minimum size of the window holding Flutter view.
   @override
-  Future<void> setMinimumSize(Size size) async {
+  Future<void> setMinimumSize(Size? size) async {
     assert_();
     try {
       await channel.invokeMethod(
         kSetMinimumSizeMethodName,
         {
-          'width': size.width,
-          'height': size.height,
+          'width': size?.width ?? 0,
+          'height': size?.height ?? 0,
         },
       );
     } catch (exception, stacktrace) {
