@@ -61,6 +61,12 @@ class PlatformWindow extends WindowState {
     throw UnimplementedError();
   }
 
+  /// Gets the minimum size of the window on the screen.
+  @alwaysThrows
+  Future<Size> get minimumSize async {
+    throw UnimplementedError();
+  }
+
   /// Stream to listen to the window's [activated] state.
   Stream<bool> get activatedStream => activatedStreamController.stream;
 
