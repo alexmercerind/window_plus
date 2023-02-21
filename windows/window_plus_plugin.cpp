@@ -25,11 +25,6 @@ WindowPlusPlugin::WindowPlusPlugin(flutter::PluginRegistrarWindows* registrar)
   channel_->SetMethodCallHandler([&](const auto& call, auto result) {
     HandleMethodCall(call, std::move(result));
   });
-  // Set default window size & default minimum window size values. DPI aware.
-  minimum_width_ = static_cast<int32_t>(GetScaleFactorForWindow() *
-                                        kWindowDefaultMinimumWidth);
-  minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() *
-                                         kWindowDefaultMinimumHeight);
   default_width_ = GetDefaultWindowWidth();
   default_height_ = GetDefaultWindowHeight();
 }
@@ -167,6 +162,20 @@ int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
     width = monitor_width;
   }
   return width;
+}
+
+void WindowPlusPlugin::SetMinimumSize(flutter::EncodableMap& args) {
+  auto width = std::get<double>(args.at(flutter::EncodableValue("width")));
+  auto height = std::get<double>(args.at(flutter::EncodableValue("height")));
+  if (width >= 0 && height >= 0) {
+    // Set default window size & default minimum window size values. DPI aware.
+    minimum_width_ = static_cast<int32_t>(GetScaleFactorForWindow() * width);
+    minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() * height);
+  }
+  else {
+    minimum_width_ = 0;
+    minimum_height_ = 0;
+  }
 }
 
 int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
@@ -694,6 +703,15 @@ void WindowPlusPlugin::HandleMethodCall(
     // Request focus.
     ::SetForegroundWindow(GetWindow());
     result->Success();
+  } else if (method_call.method_name().compare(kSetMinimumSizeMethodName) == 0) {
+    auto args = std::get<flutter::EncodableMap>(*method_call.arguments());
+    SetMinimumSize(args);
+    result->Success();
+  } else if (method_call.method_name().compare(kGetMinimumSizeMethodName) == 0) {
+    auto size_map = std::map<flutter::EncodableValue, flutter::EncodableValue>();
+    size_map[flutter::EncodableValue("width")] = flutter::EncodableValue(minimum_width_);
+    size_map[flutter::EncodableValue("height")] = flutter::EncodableValue(minimum_height_);
+    result->Success(flutter::EncodableValue(size_map));
   } else {
     result->NotImplemented();
   }
