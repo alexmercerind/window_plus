@@ -232,9 +232,9 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
           case GWL_STYLE:
           {
             auto style = (STYLESTRUCT*)lparam;
-            auto wasFullScreen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
-            auto isFullScreen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
-            if (wasFullScreen != isFullScreen) {
+            auto was_full_screen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
               channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
             }
             break;
@@ -242,9 +242,9 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
           case GWL_EXSTYLE:
           {
             auto style = (STYLESTRUCT*)lparam;
-            auto wasFullScreen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
-            auto isFullScreen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
-            if (wasFullScreen != isFullScreen) {
+            auto was_full_screen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
               channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
             }
             break;
@@ -463,9 +463,9 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
           case GWL_STYLE:
           {
             auto style = (STYLESTRUCT*)lparam;
-            auto wasFullScreen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
-            auto isFullScreen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
-            if (wasFullScreen != isFullScreen) {
+            auto was_full_screen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
               channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
             }
             break;
@@ -473,9 +473,9 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
           case GWL_EXSTYLE:
           {
             auto style = (STYLESTRUCT*)lparam;
-            auto wasFullScreen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
-            auto isFullScreen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
-            if (wasFullScreen != isFullScreen) {
+            auto was_full_screen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
               channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
             }
             break;
