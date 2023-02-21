@@ -4,8 +4,8 @@
 //
 // All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 
-import 'dart:ui';
 import 'dart:async';
+import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 
 import 'package:window_plus/src/window_state.dart';
@@ -183,6 +183,12 @@ class PlatformWindow extends WindowState {
   /// Sets the minimum size of the window holding Flutter view.
   @alwaysThrows
   Future<void> setMinimumSize(Size? size) async {
+    throw UnimplementedError();
+  }
+
+  /// Sets the alignment of the window holding Flutter view.
+  @alwaysThrows
+  Future<void> setAlignment(Alignment alignment) async {
     throw UnimplementedError();
   }
 

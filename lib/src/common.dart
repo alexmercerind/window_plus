@@ -59,3 +59,4 @@ const String kWin32FlutterViewWindowClass = 'FLUTTERVIEW';
 const int kMaximumMonitorCount = 16;
 const int WM_CAPTIONAREA = WM_USER + 0x0009;
 const int WM_NOTIFYDESTROY = WM_USER + 0x000A;
+const int kDefaultScreenDpi = 96;

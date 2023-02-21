@@ -305,6 +305,36 @@ class Win32Window extends PlatformWindow {
     }
   }
 
+  /// Sets the alignment of the window on the screen.
+  @override
+  Future<void> setAlignment(Alignment alignment) async {
+    assert_();
+    final Pointer<MONITORINFO> monitor = calloc<MONITORINFO>();
+    monitor.ref.cbSize = sizeOf<MONITORINFO>();
+    GetMonitorInfo(
+      MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+      monitor,
+    );
+    final MONITORINFO monitorinfo = monitor.ref;
+    final Size monitorSize = Size(
+      (monitorinfo.rcWork.right - monitorinfo.rcWork.left).toDouble(),
+      (monitorinfo.rcWork.bottom - monitorinfo.rcWork.top).toDouble(),
+    );
+    calloc.free(monitor);
+
+    final Rect windowRect = await size;
+    final Size windowSize = Size(windowRect.width, windowRect.height);
+
+    final Offset position = _calculateWindowPosition(
+      monitorSize,
+      windowSize,
+      alignment,
+    );
+
+    //final position = alignment.alongOffset(screenSize - windowSize);
+    await move(position.dx.round(), position.dy.round());
+  }
+
   /// Maximizes the window holding Flutter view.
   @override
   Future<void> maximize() async {
@@ -460,6 +490,31 @@ class Win32Window extends PlatformWindow {
       hwnd,
       SW_SHOW,
     );
+  }
+
+  Offset _calculateWindowPosition(
+    Size monitorSize,
+    Size windowSize,
+    Alignment windowAlignment,
+  ) {
+    final double scaleFactor = _getScaleFactorForWindow();
+    final Size screenSize = Size(
+      monitorSize.width * scaleFactor,
+      monitorSize.height * scaleFactor,
+    );
+    final Offset windowOffset = windowAlignment.alongOffset(
+      (screenSize - windowSize) as Offset,
+    );
+    return windowOffset;
+  }
+
+  double _getScaleFactorForWindow() {
+    assert_();
+    if (WindowsInfo.instance.isWindows10RS1OrGreater) {
+      return GetDpiForWindow(hwnd) / kDefaultScreenDpi;
+    }
+    // Return 1.0 if the function is not available.
+    return 1.0;
   }
 
   @override
