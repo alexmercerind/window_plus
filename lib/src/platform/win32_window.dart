@@ -126,6 +126,19 @@ class Win32Window extends PlatformWindow {
     return IsZoomed(hwnd) != 0;
   }
 
+  /// Gets the minimum size of the window on the screen.
+  @override
+  Future<Size> get minimumSize async {
+    assert_();
+    final Map<Object?, Object?> sizeMap = await channel.invokeMethod(
+      kGetMinimumSizeMethodName,
+    );
+    return Size(
+      (sizeMap['width'] as int).toDouble(), 
+      (sizeMap['height'] as int).toDouble(),
+    );
+  }
+
   /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
@@ -170,6 +183,24 @@ class Win32Window extends PlatformWindow {
     );
     calloc.free(rect);
     return result;
+  }
+
+  /// Sets the minimum size of the window holding Flutter view.
+  @override
+  Future<void> setMinimumSize(Size? size) async {
+    assert_();
+    try {
+      await channel.invokeMethod(
+        kSetMinimumSizeMethodName,
+        {
+          'width': size?.width ?? 0,
+          'height': size?.height ?? 0,
+        },
+      );
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
+    }
   }
 
   /// Enables or disables the fullscreen mode.
@@ -337,8 +368,8 @@ class Win32Window extends PlatformWindow {
       if (IsWindowVisible(next_hwnd) == TRUE) {
         final cloaked = calloc<Int>();
         final dwmWindowAttribute = DwmGetWindowAttribute(next_hwnd, 
-          DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, 
-          cloaked, 
+          DWMWINDOWATTRIBUTE.DWMWA_CLOAKED,
+          cloaked,
           sizeOf<Int>(),
         );
         if (dwmWindowAttribute != S_OK)

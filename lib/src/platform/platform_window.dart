@@ -196,6 +196,12 @@ class PlatformWindow extends WindowState {
     throw UnimplementedError();
   }
 
+  /// Sets the minimum size of the window holding Flutter view.
+  @alwaysThrows
+  Future<void> setMinimumSize(Size? size) async {
+    throw UnimplementedError();
+  }
+
   /// Maximizes the window holding Flutter view.
   @alwaysThrows
   Future<void> maximize() async {

@@ -11,6 +11,7 @@
 #include <dwmapi.h>
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
+#include <flutter/standard_method_codec.h>
 #include <windowsx.h>
 
 #include <functional>
@@ -69,6 +70,9 @@ class WindowPlusPlugin : public flutter::Plugin {
   // Replaces the existing |MoveWindow| behavior in Windows runner template to
   // be more friendly to custom title-bar and frameless windows.
   void AlignChildContent();
+
+  // Sets minimum size of the window.
+  void SetMinimumSize(flutter::EncodableMap& args);
 
   std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message,
                                             WPARAM wparam,

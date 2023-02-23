@@ -11,6 +11,9 @@ Future<void> main() async {
   await WindowPlus.ensureInitialized(
     application: 'com.alexmercerind.window_plus',
   );
+  await WindowPlus.instance.setMinimumSize(const Size(800, 600));
+  final minimumSize = await WindowPlus.instance.minimumSize;
+  debugPrint('MinWidth: ${minimumSize.width}, MinHeight: ${minimumSize.height}');
   WindowPlus.instance.setWindowCloseHandler(() async {
     bool result = false;
     await showDialog(
