@@ -233,6 +233,37 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
       }
       break;
     }
+    case WM_STYLECHANGED: {
+      // Notify Flutter.
+      if (enable_event_streams_) {
+        switch (wparam)
+        {
+          case GWL_STYLE:
+          {
+            auto style = (STYLESTRUCT*)lparam;
+            auto was_full_screen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
+              channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
+            }
+            break;
+          }
+          case GWL_EXSTYLE:
+          {
+            auto style = (STYLESTRUCT*)lparam;
+            auto was_full_screen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
+              channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
+            }
+            break;
+          }
+          default:
+            break;
+        }
+      }
+      break;
+    }
     case WM_GETMINMAXINFO: {
       auto info = reinterpret_cast<LPMINMAXINFO>(lparam);
       info->ptMinTrackSize.x = minimum_width_;
@@ -430,6 +461,37 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
       // Notify Flutter.
       if (enable_event_streams_) {
         channel_->InvokeMethod(kWindowActivatedMethodName, nullptr, nullptr);
+      }
+      break;
+    }
+    case WM_STYLECHANGED: {
+      // Notify Flutter.
+      if (enable_event_streams_) {
+        switch (wparam)
+        {
+          case GWL_STYLE:
+          {
+            auto style = (STYLESTRUCT*)lparam;
+            auto was_full_screen = !((style->styleOld & WS_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
+              channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
+            }
+            break;
+          }
+          case GWL_EXSTYLE:
+          {
+            auto style = (STYLESTRUCT*)lparam;
+            auto was_full_screen = !((style->styleOld & WS_EX_OVERLAPPEDWINDOW) > 0);
+            auto is_full_screen = !((style->styleNew & WS_EX_OVERLAPPEDWINDOW) > 0);
+            if (was_full_screen != is_full_screen) {
+              channel_->InvokeMethod(kWindowFullScreenMethodName, nullptr, nullptr);
+            }
+            break;
+          }
+          default:
+            break;
+        }
       }
       break;
     }
