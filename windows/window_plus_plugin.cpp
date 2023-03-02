@@ -376,11 +376,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(
     }
     case WM_NOTIFYDESTROY: {
       intercept_close_ = false;
-      if (!::IsWindows10OrGreater()) {
-        KillProcess();
-      } else {
-        ::DestroyWindow(window);
-      }
+      KillProcess();
       return 0;
     }
     case WM_MOVE: {
@@ -458,11 +454,7 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(
     }
     case WM_NOTIFYDESTROY: {
       intercept_close_ = false;
-      if (!::IsWindows10OrGreater()) {
-        KillProcess();
-      } else {
-        ::DestroyWindow(window);
-      }
+      KillProcess();
       return 0;
     }
     case WM_MOVE: {
