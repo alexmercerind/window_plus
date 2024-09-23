@@ -168,7 +168,7 @@ class _MyAppState extends State<MyApp> {
                           const SizedBox(height: 16.0),
                           Wrap(
                             children: [
-                              const SizedBox(width: 32.0),
+                              const SizedBox(width: 28.0),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -273,7 +273,7 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 32.0),
+                              const SizedBox(width: 28.0),
                             ],
                           ),
                           const SizedBox(height: 16.0),
@@ -301,7 +301,7 @@ class _MyAppState extends State<MyApp> {
                           Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 28.0),
                               const SizedBox(
                                 width: 96.0,
                                 child: Text('movement :'),
@@ -350,13 +350,13 @@ class _MyAppState extends State<MyApp> {
                                 },
                                 child: const Text('down'),
                               ),
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 28.0),
                             ],
                           ),
                           Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 28.0),
                               const SizedBox(
                                 width: 96.0,
                                 child: Text('resize :'),
@@ -405,7 +405,7 @@ class _MyAppState extends State<MyApp> {
                                 },
                                 child: const Text('down'),
                               ),
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 28.0),
                             ],
                           ),
                           const SizedBox(height: 16.0),
