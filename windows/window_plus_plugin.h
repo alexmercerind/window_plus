@@ -1,9 +1,7 @@
-// This file is a part of window_plus
-// (https://github.com/alexmercerind/window_plus).
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
 //
 // Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-// All rights reserved. Use of this source code is governed by MIT license that
-// can be found in the LICENSE file.
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 #ifndef FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_
 #define FLUTTER_PLUGIN_WINDOW_PLUS_PLUGIN_H_
 
@@ -74,25 +72,17 @@ class WindowPlusPlugin : public flutter::Plugin {
   // Sets minimum size of the window.
   void SetMinimumSize(flutter::EncodableMap& args);
 
-  std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message,
-                                            WPARAM wparam,
-                                            LPARAM lparam) noexcept;
+  std::optional<HRESULT> WindowProcDelegate(HWND window, UINT message, WPARAM wparam, LPARAM lparam) noexcept;
 
   // For Windows lower than 10 RS1, where custom frame isn't used.
   // Does not handle |WM_NCHITTEST| & |WM_NCCALCSIZE| messages.
-  std::optional<HRESULT> FallbackWindowProcDelegate(HWND window, UINT message,
-                                                    WPARAM wparam,
-                                                    LPARAM lparam) noexcept;
+  std::optional<HRESULT> FallbackWindowProcDelegate(HWND window, UINT message, WPARAM wparam, LPARAM lparam) noexcept;
 
-  static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam,
-                                 LPARAM lparam, UINT_PTR id,
-                                 DWORD_PTR data) noexcept;
+  static LRESULT ChildWindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR id, DWORD_PTR data) noexcept;
 
   void SendSingleInstanceData(LPARAM lparam);
 
-  void HandleMethodCall(
-      const flutter::MethodCall<flutter::EncodableValue>& method_call,
-      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+  void HandleMethodCall(const flutter::MethodCall<flutter::EncodableValue>& method_call, std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   // On Windows 7, the process is not terminated when the window is closed and
   // the app is not visible. This is a workaround to terminate the process when
@@ -100,8 +90,7 @@ class WindowPlusPlugin : public flutter::Plugin {
   void KillProcess();
 
   flutter::PluginRegistrarWindows* registrar_ = nullptr;
-  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ =
-      nullptr;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_ = nullptr;
   bool intercept_close_ = true;
   int64_t window_proc_delegate_id_ = -1;
 

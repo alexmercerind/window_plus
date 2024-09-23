@@ -1,9 +1,7 @@
-// This file is a part of window_plus
-// (https://github.com/alexmercerind/window_plus).
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
 //
 // Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-// All rights reserved. Use of this source code is governed by MIT license that
-// can be found in the LICENSE file.
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 #ifndef WINDOW_PLUS_COMMON_H_
 #define WINDOW_PLUS_COMMON_H_
 
@@ -13,14 +11,12 @@ static constexpr auto kEnsureInitializedMethodName = "ensureInitialized";
 static constexpr auto kGetMinimumSizeMethodName = "getMinimumSize";
 static constexpr auto kSetMinimumSizeMethodName = "setMinimumSize";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
-static constexpr auto kNotifyFirstFrameRasterizedMethodName =
-    "notifyFirstFrameRasterized";
+static constexpr auto kNotifyFirstFrameRasterizedMethodName = "notifyFirstFrameRasterized";
 static constexpr auto kWindowMovedMethodName = "windowMoved";
 static constexpr auto kWindowResizedMethodName = "windowResized";
 static constexpr auto kWindowActivatedMethodName = "windowActivated";
 static constexpr auto kWindowFullScreenMethodName = "windowFullScreen";
-static constexpr auto kSingleInstanceDataReceivedMethodName =
-    "singleInstanceDataReceived";
+static constexpr auto kSingleInstanceDataReceivedMethodName = "singleInstanceDataReceived";
 static constexpr auto kWindows10RTM = 10240;
 static constexpr auto kWindows10RS1 = 14393;
 static constexpr auto kWindows10RS5 = 17763;

@@ -1,9 +1,7 @@
-// This file is a part of window_plus
-// (https://github.com/alexmercerind/window_plus).
+// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
 //
 // Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-// All rights reserved. Use of this source code is governed by MIT license that
-// can be found in the LICENSE file.
+// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 #include "include/window_plus/window_plus_plugin.h"
 
 #include <flutter_linux/flutter_linux.h>
@@ -56,9 +54,7 @@ static constexpr auto kWindowDefaultHeight = 720;
 static constexpr auto kWindowDefaultMinimumWidth = 960;
 static constexpr auto kWindowDefaultMinimumHeight = 640;
 
-#define WINDOW_PLUS_PLUGIN(obj)                                     \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj), window_plus_plugin_get_type(), \
-                              WindowPlusPlugin))
+#define WINDOW_PLUS_PLUGIN(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), window_plus_plugin_get_type(), WindowPlusPlugin))
 
 struct _WindowPlusPlugin {
   GObject parent_instance;
@@ -82,12 +78,10 @@ static GdkPoint get_cursor_position() {
 static gint get_default_window_width() {
   GdkPoint cursor = get_cursor_position();
   GdkDisplay* display = gdk_display_get_default();
-  GdkMonitor* monitor =
-      gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+  GdkMonitor* monitor = gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
   GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
   gdk_monitor_get_workarea(monitor, &workarea);
-  gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                       workarea.width == 0 && workarea.height == 0);
+  gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
   if (success) {
     gint monitor_width = workarea.width - 48;
     if (kWindowDefaultWidth > monitor_width) {
@@ -100,12 +94,10 @@ static gint get_default_window_width() {
 static gint get_default_window_height() {
   GdkPoint cursor = get_cursor_position();
   GdkDisplay* display = gdk_display_get_default();
-  GdkMonitor* monitor =
-      gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+  GdkMonitor* monitor = gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
   GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
   gdk_monitor_get_workarea(monitor, &workarea);
-  gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                       workarea.width == 0 && workarea.height == 0);
+  gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
   if (success) {
     gint monitor_height = workarea.height - 48;
     if (kWindowDefaultHeight > monitor_height) {
@@ -115,37 +107,26 @@ static gint get_default_window_height() {
   return kWindowDefaultHeight;
 }
 
-static gboolean delete_event(GtkWidget* self, GdkEvent* event,
-                             gpointer user_data) {
+static gboolean delete_event(GtkWidget* self, GdkEvent* event, gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
   g_autoptr(FlValue) arguments = fl_value_new_null();
-  fl_method_channel_invoke_method(plugin->channel,
-                                  kWindowCloseReceivedMethodName, arguments,
-                                  NULL, NULL, NULL);
+  fl_method_channel_invoke_method(plugin->channel, kWindowCloseReceivedMethodName, arguments, NULL, NULL, NULL);
   return TRUE;
 }
 
-static gboolean window_state_event(GtkWidget* self, GdkEventWindowState* event,
-                                   gpointer user_data) {
+static gboolean window_state_event(GtkWidget* self, GdkEventWindowState* event, gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
-  gboolean minimized = event->new_window_state & GDK_WINDOW_STATE_ICONIFIED,
-           maximized = event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED,
+  gboolean minimized = event->new_window_state & GDK_WINDOW_STATE_ICONIFIED, maximized = event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED,
            fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
   g_autoptr(FlValue) arguments = fl_value_new_map();
-  fl_value_set_string_take(arguments, "minimized",
-                           fl_value_new_bool(minimized));
-  fl_value_set_string_take(arguments, "maximized",
-                           fl_value_new_bool(maximized));
-  fl_value_set_string_take(arguments, "fullscreen",
-                           fl_value_new_bool(fullscreen));
-  fl_method_channel_invoke_method(plugin->channel,
-                                  kWindowStateEventReceivedMethodName,
-                                  arguments, NULL, NULL, NULL);
+  fl_value_set_string_take(arguments, "minimized", fl_value_new_bool(minimized));
+  fl_value_set_string_take(arguments, "maximized", fl_value_new_bool(maximized));
+  fl_value_set_string_take(arguments, "fullscreen", fl_value_new_bool(fullscreen));
+  fl_method_channel_invoke_method(plugin->channel, kWindowStateEventReceivedMethodName, arguments, NULL, NULL, NULL);
   return FALSE;
 }
 
-gboolean configure_event(GtkWidget* self, GdkEventConfigure* event,
-                         gpointer user_data) {
+gboolean configure_event(GtkWidget* self, GdkEventConfigure* event, gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
   g_autoptr(FlValue) arguments = fl_value_new_map();
   FlValue* position = fl_value_new_map();
@@ -158,72 +139,51 @@ gboolean configure_event(GtkWidget* self, GdkEventConfigure* event,
   fl_value_set_string_take(size, "bottom", fl_value_new_int(event->height));
   fl_value_set_string_take(arguments, "position", position);
   fl_value_set_string_take(arguments, "size", size);
-  fl_method_channel_invoke_method(plugin->channel,
-                                  kConfigureEventReceivedMethodName, arguments,
-                                  NULL, NULL, NULL);
+  fl_method_channel_invoke_method(plugin->channel, kConfigureEventReceivedMethodName, arguments, NULL, NULL, NULL);
   return FALSE;
 }
 
-static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
-                                                  FlMethodCall* method_call) {
+static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMethodCall* method_call) {
   g_autoptr(FlMethodResponse) response = nullptr;
   const gchar* method = fl_method_call_get_name(method_call);
   if (strcmp(method, kEnsureInitializedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     FlValue* arguments = fl_method_call_get_args(method_call);
-    FlValue* enable_event_streams =
-        fl_value_lookup_string(arguments, "enableEventStreams");
+    FlValue* enable_event_streams = fl_value_lookup_string(arguments, "enableEventStreams");
     if (fl_value_get_type(enable_event_streams) == FL_VALUE_TYPE_BOOL) {
       if (fl_value_get_bool(enable_event_streams)) {
-        g_signal_connect(window, "window-state-event",
-                         G_CALLBACK(window_state_event), self);
-        g_signal_connect(window, "configure-event", G_CALLBACK(configure_event),
-                         self);
+        g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_event), self);
+        g_signal_connect(window, "configure-event", G_CALLBACK(configure_event), self);
       }
     }
     // Handle `delete-event` signal for window close button interception.
     g_signal_connect(window, "delete-event", G_CALLBACK(delete_event), self);
-    gint default_width = get_default_window_width(),
-         default_height = get_default_window_height();
+    gint default_width = get_default_window_width(), default_height = get_default_window_height();
     gtk_window_set_default_size(window, default_width, default_height);
     GdkGeometry geometry;
     geometry.min_width = kWindowDefaultMinimumWidth;
     geometry.min_height = kWindowDefaultMinimumHeight;
     geometry.base_width = default_width;
     geometry.base_height = default_height;
-    gtk_window_set_geometry_hints(
-        window, GTK_WIDGET(window), &geometry,
-        static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE));
+    gtk_window_set_geometry_hints(window, GTK_WIDGET(window), &geometry, static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE));
     // Make |window| background black, to prevent a white splash on launch.
     g_autoptr(GtkCssProvider) style = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(style),
-                                    "window { background:none; }", -1, nullptr);
+    gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(style), "window { background:none; }", -1, nullptr);
     GdkScreen* screen = gtk_window_get_screen(window);
-    gtk_style_context_add_provider_for_screen(
-        screen, GTK_STYLE_PROVIDER(style),
-        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(style), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     try {
-      FlValue* saved_window_state =
-          fl_value_lookup_string(arguments, "savedWindowState");
+      FlValue* saved_window_state = fl_value_lookup_string(arguments, "savedWindowState");
       if (fl_value_get_type(saved_window_state) == FL_VALUE_TYPE_MAP) {
-        gint x =
-            fl_value_get_int(fl_value_lookup_string(saved_window_state, "x"));
-        gint y =
-            fl_value_get_int(fl_value_lookup_string(saved_window_state, "y"));
-        gint width = fl_value_get_int(
-            fl_value_lookup_string(saved_window_state, "width"));
-        gint height = fl_value_get_int(
-            fl_value_lookup_string(saved_window_state, "height"));
-        gint maximized = fl_value_get_bool(
-            fl_value_lookup_string(saved_window_state, "maximized"));
-        // Make the sure that |window| is present within bounds of any of the
-        // monitors. Otherwise, center the |window| to the closest monitor (to
-        // the mouse curosr).
-        // If the saved window dimensions exceed the monitor's |workarea|, then
-        // clamp to default window dimensions.
-        // If the |window| is present within bounds of any of the monitor(s),
-        // then restore the |window| to the saved position & size.
+        gint x = fl_value_get_int(fl_value_lookup_string(saved_window_state, "x"));
+        gint y = fl_value_get_int(fl_value_lookup_string(saved_window_state, "y"));
+        gint width = fl_value_get_int(fl_value_lookup_string(saved_window_state, "width"));
+        gint height = fl_value_get_int(fl_value_lookup_string(saved_window_state, "height"));
+        gint maximized = fl_value_get_bool(fl_value_lookup_string(saved_window_state, "maximized"));
+        // Make the sure that |window| is present within bounds of any of the monitors.
+        // Otherwise, center the |window| to the closest monitor (to the mouse cursor).
+        // If the saved window dimensions exceed the monitor's |workarea|, then clamp to default window dimensions.
+        // If the |window| is present within bounds of any of the monitor(s), then restore the |window| to the saved position & size.
         gboolean is_within_monitor = FALSE;
         GdkDisplay* display = gdk_display_get_default();
         gint n_monitors = gdk_display_get_n_monitors(display);
@@ -231,21 +191,16 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           GdkMonitor* monitor = gdk_display_get_monitor(display, i);
           GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
           gdk_monitor_get_workarea(monitor, &workarea);
-          gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                               workarea.width == 0 && workarea.height == 0);
+          gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
           if (success) {
-            g_print("GdkRectangle{ %d, %d, %d, %d }\n", workarea.x, workarea.y,
-                    workarea.width, workarea.height);
+            g_print("GdkRectangle{ %d, %d, %d, %d }\n", workarea.x, workarea.y, workarea.width, workarea.height);
             if (!is_within_monitor) {
-              gint monitor_left = workarea.x, monitor_top = workarea.y,
-                   monitor_right = workarea.x + workarea.width,
-                   monitor_bottom = workarea.y + workarea.height;
+              gint monitor_left = workarea.x, monitor_top = workarea.y, monitor_right = workarea.x + workarea.width, monitor_bottom = workarea.y + workarea.height;
               monitor_left += kMonitorSafeArea;
               monitor_top += kMonitorSafeArea;
               monitor_right -= kMonitorSafeArea;
               monitor_bottom -= kMonitorSafeArea;
-              if (x > monitor_left && x + width < monitor_right &&
-                  y > monitor_top && y + height < monitor_bottom) {
+              if (x > monitor_left && x + width < monitor_right && y > monitor_top && y + height < monitor_bottom) {
                 g_print("GtkWindow within bounds.\n");
                 is_within_monitor = TRUE;
               }
@@ -256,19 +211,15 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
           gtk_window_resize(window, width, height);
           gtk_window_move(window, x, y);
         } else {
-          // Not present within bounds, center with the already saved &
-          // available |height| & |width| values.
+          // Not present within bounds, center with the already saved & available |height| & |width| values.
           GdkPoint cursor = get_cursor_position();
           GdkDisplay* display = gdk_display_get_default();
-          GdkMonitor* monitor =
-              gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+          GdkMonitor* monitor = gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
           GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
           gdk_monitor_get_workarea(monitor, &workarea);
-          gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                               workarea.width == 0 && workarea.height == 0);
+          gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
           if (success) {
-            // Make sure to clamp ignore |width| & |height| if they exceed the
-            // current workarea dimensions and use default dimensions instead.
+            // Make sure to clamp ignore |width| & |height| if they exceed the current workarea dimensions and use default dimensions instead.
             gtk_window_resize(window, default_width, default_height);
             gtk_window_set_position(window, GTK_WIN_POS_CENTER);
           }
@@ -279,38 +230,30 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
         }
       } else {
         // No saved state. Restore window to the center of the workarea.
-        // Not present within bounds, center with the already saved &
-        // available |height| & |width| values.
+        // Not present within bounds, center with the already saved & available |height| & |width| values.
         GdkPoint cursor = get_cursor_position();
         GdkDisplay* display = gdk_display_get_default();
-        GdkMonitor* monitor =
-            gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+        GdkMonitor* monitor = gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
         GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
         gdk_monitor_get_workarea(monitor, &workarea);
-        gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                             workarea.width == 0 && workarea.height == 0);
+        gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
         if (success) {
-          // Make sure to clamp ignore |width| & |height| if they exceed the
-          // current workarea dimensions and use default dimensions instead.
+          // Make sure to clamp ignore |width| & |height| if they exceed the current workarea dimensions and use default dimensions instead.
           gtk_window_resize(window, default_width, default_height);
           gtk_window_set_position(window, GTK_WIN_POS_CENTER);
         }
       }
     } catch (...) {
       // No saved state. Restore window to the center of the workarea.
-      // Not present within bounds, center with the already saved &
-      // available |height| & |width| values.
+      // Not present within bounds, center with the already saved & available |height| & |width| values.
       GdkPoint cursor = get_cursor_position();
       GdkDisplay* display = gdk_display_get_default();
-      GdkMonitor* monitor =
-          gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
+      GdkMonitor* monitor = gdk_display_get_monitor_at_point(display, cursor.x, cursor.y);
       GdkRectangle workarea = GdkRectangle{0, 0, 0, 0};
       gdk_monitor_get_workarea(monitor, &workarea);
-      gboolean success = !(workarea.x == 0 && workarea.y == 0 &&
-                           workarea.width == 0 && workarea.height == 0);
+      gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
       if (success) {
-        // Make sure to clamp ignore |width| & |height| if they exceed the
-        // current workarea dimensions and use default dimensions instead.
+        // Make sure to clamp ignore |width| & |height| if they exceed the current workarea dimensions and use default dimensions instead.
         gtk_window_resize(window, default_width, default_height);
         gtk_window_set_position(window, GTK_WIN_POS_CENTER);
       }
@@ -319,8 +262,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     gtk_widget_show(GTK_WIDGET(view));
     gtk_widget_show(GTK_WIDGET(window));
     int64_t result = reinterpret_cast<int64_t>(window);
-    response = FL_METHOD_RESPONSE(
-        fl_method_success_response_new(fl_value_new_int(result)));
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_int(result)));
   } else if (strcmp(method, kGetStateMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
@@ -335,20 +277,16 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     } else {
       // Already cached |window| position & size, sent from Dart side.
       FlValue* arguments = fl_method_call_get_args(method_call);
-      FlValue* saved_window_state =
-          fl_value_lookup_string(arguments, "savedWindowState");
+      FlValue* saved_window_state = fl_value_lookup_string(arguments, "savedWindowState");
       if (fl_value_get_type(saved_window_state) == FL_VALUE_TYPE_MAP) {
         x = fl_value_get_int(fl_value_lookup_string(saved_window_state, "x"));
         y = fl_value_get_int(fl_value_lookup_string(saved_window_state, "y"));
-        width = fl_value_get_int(
-            fl_value_lookup_string(saved_window_state, "width"));
-        height = fl_value_get_int(
-            fl_value_lookup_string(saved_window_state, "height"));
+        width = fl_value_get_int(fl_value_lookup_string(saved_window_state, "width"));
+        height = fl_value_get_int(fl_value_lookup_string(saved_window_state, "height"));
       }
     }
     auto result = fl_value_new_map();
-    // NOTE: Use existing cached |x|, |y|, |width| & |height| values if
-    // |maximized| is `TRUE` i.e. sent from Dart side.
+    // NOTE: Use existing cached |x|, |y|, |width| & |height| values if |maximized| is `TRUE` i.e. sent from Dart side.
     fl_value_set_string_take(result, "x", fl_value_new_int(x));
     fl_value_set_string_take(result, "y", fl_value_new_int(y));
     fl_value_set_string_take(result, "width", fl_value_new_int(width));
@@ -359,20 +297,15 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     gtk_window_close(window);
-    response =
-        FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kDestroyMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    std::thread([=]() {
-      g_signal_emit_by_name(G_OBJECT(window), "destroy");
-    }).detach();
-    response =
-        FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+    std::thread([=]() { g_signal_emit_by_name(G_OBJECT(window), "destroy"); }).detach();
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kSetIsFullscreenMethodName) == 0) {
     FlValue* arguments = fl_method_call_get_args(method_call);
-    bool enabled =
-        fl_value_get_bool(fl_value_lookup_string(arguments, "enabled"));
+    bool enabled = fl_value_get_bool(fl_value_lookup_string(arguments, "enabled"));
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     if (enabled) {
@@ -380,8 +313,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     } else {
       gtk_window_unfullscreen(window);
     }
-    response =
-        FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kNotifyFirstFrameRasterizedMethodName) == 0) {
     // TODO (@alexmercerind): Missing implementation.
     // Capture user focus & present the |window| on top of other windows.
@@ -389,28 +321,24 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     gtk_window_present(window);
     gtk_widget_grab_focus(view);
-    response =
-        FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kGetIsMinimizedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GdkWindow* window = gtk_widget_get_window(gtk_widget_get_toplevel(view));
     GdkWindowState state = gdk_window_get_state(window);
-    g_autoptr(FlValue) result =
-        fl_value_new_bool(state & GDK_WINDOW_STATE_ICONIFIED);
+    g_autoptr(FlValue) result = fl_value_new_bool(state & GDK_WINDOW_STATE_ICONIFIED);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
   } else if (strcmp(method, kGetIsMaximizedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GdkWindow* window = gtk_widget_get_window(gtk_widget_get_toplevel(view));
     GdkWindowState state = gdk_window_get_state(window);
-    g_autoptr(FlValue) result =
-        fl_value_new_bool(state & GDK_WINDOW_STATE_MAXIMIZED);
+    g_autoptr(FlValue) result = fl_value_new_bool(state & GDK_WINDOW_STATE_MAXIMIZED);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
   } else if (strcmp(method, kGetIsFullscreenMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GdkWindow* window = gtk_widget_get_window(gtk_widget_get_toplevel(view));
     GdkWindowState state = gdk_window_get_state(window);
-    g_autoptr(FlValue) result =
-        fl_value_new_bool(state & GDK_WINDOW_STATE_FULLSCREEN);
+    g_autoptr(FlValue) result = fl_value_new_bool(state & GDK_WINDOW_STATE_FULLSCREEN);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
   } else if (strcmp(method, kGetSizeMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
@@ -443,21 +371,15 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
       gdk_monitor_get_geometry(monitor, &bounds);
       auto fl_monitor = fl_value_new_map();
       FlValue* fl_workarea = fl_value_new_map();
-      fl_value_set_string_take(fl_workarea, "left",
-                               fl_value_new_int(workarea.x));
-      fl_value_set_string_take(fl_workarea, "top",
-                               fl_value_new_int(workarea.y));
-      fl_value_set_string_take(fl_workarea, "right",
-                               fl_value_new_int(workarea.width));
-      fl_value_set_string_take(fl_workarea, "bottom",
-                               fl_value_new_int(workarea.height));
+      fl_value_set_string_take(fl_workarea, "left", fl_value_new_int(workarea.x));
+      fl_value_set_string_take(fl_workarea, "top", fl_value_new_int(workarea.y));
+      fl_value_set_string_take(fl_workarea, "right", fl_value_new_int(workarea.width));
+      fl_value_set_string_take(fl_workarea, "bottom", fl_value_new_int(workarea.height));
       FlValue* fl_bounds = fl_value_new_map();
       fl_value_set_string_take(fl_bounds, "left", fl_value_new_int(bounds.x));
       fl_value_set_string_take(fl_bounds, "top", fl_value_new_int(bounds.y));
-      fl_value_set_string_take(fl_bounds, "right",
-                               fl_value_new_int(bounds.width));
-      fl_value_set_string_take(fl_bounds, "bottom",
-                               fl_value_new_int(bounds.height));
+      fl_value_set_string_take(fl_bounds, "right", fl_value_new_int(bounds.width));
+      fl_value_set_string_take(fl_bounds, "bottom", fl_value_new_int(bounds.height));
       fl_value_set_string_take(fl_monitor, "workarea", fl_workarea);
       fl_value_set_string_take(fl_monitor, "bounds", fl_bounds);
       fl_value_append_take(result, fl_monitor);
@@ -510,32 +432,23 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self,
   fl_method_call_respond(method_call, response, nullptr);
 }
 
-static void window_plus_plugin_dispose(GObject* object) {
-  G_OBJECT_CLASS(window_plus_plugin_parent_class)->dispose(object);
-}
+static void window_plus_plugin_dispose(GObject* object) { G_OBJECT_CLASS(window_plus_plugin_parent_class)->dispose(object); }
 
-static void window_plus_plugin_class_init(WindowPlusPluginClass* klass) {
-  G_OBJECT_CLASS(klass)->dispose = window_plus_plugin_dispose;
-}
+static void window_plus_plugin_class_init(WindowPlusPluginClass* klass) { G_OBJECT_CLASS(klass)->dispose = window_plus_plugin_dispose; }
 
 static void window_plus_plugin_init(WindowPlusPlugin* self) {}
 
-static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
-                           gpointer user_data) {
+static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call, gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
   window_plus_plugin_handle_method_call(plugin, method_call);
 }
 
 void window_plus_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
-  plugin =
-      WINDOW_PLUS_PLUGIN(g_object_new(window_plus_plugin_get_type(), nullptr));
+  plugin = WINDOW_PLUS_PLUGIN(g_object_new(window_plus_plugin_get_type(), nullptr));
   plugin->registrar = FL_PLUGIN_REGISTRAR(g_object_ref(registrar));
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
-  plugin->channel =
-      fl_method_channel_new(fl_plugin_registrar_get_messenger(registrar),
-                            kMethodChannelName, FL_METHOD_CODEC(codec));
-  fl_method_channel_set_method_call_handler(plugin->channel, method_call_cb,
-                                            plugin, g_object_unref);
+  plugin->channel = fl_method_channel_new(fl_plugin_registrar_get_messenger(registrar), kMethodChannelName, FL_METHOD_CODEC(codec));
+  fl_method_channel_set_method_call_handler(plugin->channel, method_call_cb, plugin, g_object_unref);
 }
 
 void window_plus_plugin_handle_single_instance(gchar** arguments) {
@@ -544,8 +457,6 @@ void window_plus_plugin_handle_single_instance(gchar** arguments) {
     for (gint i = 0; i < g_strv_length(arguments); i++) {
       fl_value_append_take(result, fl_value_new_string(arguments[i]));
     }
-    fl_method_channel_invoke_method(plugin->channel,
-                                    kSingleInstanceDataReceivedMethodName,
-                                    result, nullptr, nullptr, nullptr);
+    fl_method_channel_invoke_method(plugin->channel, kSingleInstanceDataReceivedMethodName, result, nullptr, nullptr, nullptr);
   }
 }
