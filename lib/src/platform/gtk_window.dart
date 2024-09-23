@@ -85,8 +85,7 @@ class GTKWindow extends PlatformWindow {
             debugPrint(stacktrace.toString());
           }
           // Call the public handler.
-          final result =
-              await (windowCloseHandler?.call() ?? Future.value(true));
+          final result = (await windowCloseHandler?.call()) ?? true;
           if (result) {
             destroy();
           }
@@ -104,28 +103,28 @@ class GTKWindow extends PlatformWindow {
   /// Whether the window is minimized.
   @override
   Future<bool> get minimized async {
-    assert_();
+    ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsMinimizedMethodName);
   }
 
   /// Whether the window is maximized.
   @override
   Future<bool> get maximized async {
-    assert_();
+    ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsMaximizedMethodName);
   }
 
   /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
-    assert_();
+    ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsFullscreenMethodName);
   }
 
   /// Gets the position of the window on the screen.
   @override
   Future<Offset> get position async {
-    assert_();
+    ensureHandleAvailable();
     final position = await channel.invokeMethod(
       kGetPositionMethodName,
     );
@@ -138,7 +137,7 @@ class GTKWindow extends PlatformWindow {
   /// Gets the size of the window on the screen.
   @override
   Future<Rect> get size async {
-    assert_();
+    ensureHandleAvailable();
     final size = await channel.invokeMethod(
       kGetSizeMethodName,
     );
@@ -157,7 +156,7 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> setIsFullscreen(bool enabled) async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(
       kSetIsFullscreenMethodName,
       {
@@ -169,21 +168,21 @@ class GTKWindow extends PlatformWindow {
   /// Maximizes the window holding Flutter view.
   @override
   Future<void> maximize() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kMaximizeMethodName);
   }
 
   /// Restores the window holding Flutter view.
   @override
   Future<void> restore() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kRestoreMethodName);
   }
 
   /// Minimizes the window holding Flutter view.
   @override
   Future<void> minimize() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kMinimizeMethodName);
   }
 
@@ -195,7 +194,7 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> close() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kCloseMethodName);
   }
 
@@ -205,14 +204,14 @@ class GTKWindow extends PlatformWindow {
   ///
   @override
   Future<void> destroy() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kDestroyMethodName);
   }
 
   /// Moves (or sets position of the window) holding Flutter view on the screen.
   @override
   Future<void> move(int x, int y) async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(
       kMoveMethodName,
       {
@@ -225,7 +224,7 @@ class GTKWindow extends PlatformWindow {
   /// Resizes (or sets size of the window) holding Flutter view on the screen.
   @override
   Future<void> resize(int width, int height) async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(
       kResizeMethodName,
       {
@@ -238,20 +237,20 @@ class GTKWindow extends PlatformWindow {
   /// Hides the window holding Flutter view.
   @override
   Future<void> hide() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kHideMethodName);
   }
 
   /// Shows the window holding Flutter view.
   @override
   Future<void> show() async {
-    assert_();
+    ensureHandleAvailable();
     await channel.invokeMethod(kShowMethodName);
   }
 
   @override
   Future<List<Monitor>> get monitors async {
-    assert_();
+    ensureHandleAvailable();
     final monitors = await channel.invokeMethod(kGetMonitorsMethodName);
     return List<Monitor>.from(
       monitors.map(

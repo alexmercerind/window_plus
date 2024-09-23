@@ -65,20 +65,18 @@ class WindowState {
   /// Saves the window position, size & maximized state to the cache before exit.
   Future<void> save() async {
     if (Platform.isWindows) {
-      assert(hwnd != 0);
+      assert(handle != 0);
       // Only save the window state if the window is not minimized.
-      if (IsIconic(hwnd) == 0) {
-        final maximized = IsZoomed(hwnd) != 0;
+      if (IsIconic(handle) == 0) {
+        final maximized = IsZoomed(handle) != 0;
         final placement = calloc<WINDOWPLACEMENT>();
         placement.ref.length = sizeOf<WINDOWPLACEMENT>();
-        GetWindowPlacement(hwnd, placement);
+        GetWindowPlacement(handle, placement);
         final result = SavedWindowState(
           placement.ref.rcNormalPosition.left,
           placement.ref.rcNormalPosition.top,
-          placement.ref.rcNormalPosition.right -
-              placement.ref.rcNormalPosition.left,
-          placement.ref.rcNormalPosition.bottom -
-              placement.ref.rcNormalPosition.top,
+          placement.ref.rcNormalPosition.right - placement.ref.rcNormalPosition.left,
+          placement.ref.rcNormalPosition.bottom - placement.ref.rcNormalPosition.top,
           maximized,
         );
         calloc.free(placement);
@@ -108,7 +106,7 @@ class WindowState {
         try {
           final hr = SHGetKnownFolderPath(
             rfid,
-            KF_FLAG_DEFAULT,
+            KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT,
             NULL,
             result,
           );
@@ -157,7 +155,7 @@ class WindowState {
   /// This method is called through [WindowPlus.ensureInitialized] since it is asynchronous in nature.
   Future<void> initialize() async {
     try {
-      hwnd = await channel.invokeMethod(
+      handle = await channel.invokeMethod(
         kEnsureInitializedMethodName,
         {
           'enableCustomFrame': enableCustomFrame,
@@ -186,18 +184,15 @@ class WindowState {
     });
   }
 
-  void assert_() {
-    assert(
-      hwnd > 0,
-      'Either [WindowPlus.ensureInitialized] is not called.',
-    );
+  void ensureHandleAvailable() {
+    assert(handle > 0);
   }
 
   /// [SafeLocalStorage] used for saving the window position, size & maximized state before exit.
   SafeLocalStorage? storage;
 
   /// The window handle to which this Flutter view is bound.
-  int hwnd = 0;
+  int handle = 0;
 
   /// [MethodChannel] for communicating with the native side.
   final MethodChannel channel = const MethodChannel(kMethodChannelName);

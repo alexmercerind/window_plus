@@ -37,17 +37,17 @@ class WindowCaptionArea extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onPanStart: (e) {
-        assert(WindowPlus.instance.hwnd > 0);
+        assert(WindowPlus.instance.handle > 0);
         PostMessage(
-          WindowPlus.instance.hwnd,
+          WindowPlus.instance.handle,
           WM_CAPTIONAREA,
           0,
           0,
         );
       },
       onDoubleTap: () {
-        assert(WindowPlus.instance.hwnd > 0);
-        if (IsZoomed(WindowPlus.instance.hwnd) != 0) {
+        assert(WindowPlus.instance.handle > 0);
+        if (IsZoomed(WindowPlus.instance.handle) != 0) {
           WindowPlus.instance.restore();
         } else {
           WindowPlus.instance.maximize();
@@ -327,7 +327,7 @@ class WindowRestoreMaximizeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IsZoomed(WindowPlus.instance.hwnd) != 0
+    return IsZoomed(WindowPlus.instance.handle) != 0
         ? WindowRestoreButton(
             colors: colors,
             onPressed: onPressed,
@@ -422,8 +422,9 @@ class _WindowCaptionState extends State<WindowCaption> {
     if (!WindowPlus.instance.enableCustomFrame || !Platform.isWindows) {
       return const SizedBox.shrink();
     }
-    final style = GetWindowLongPtr(WindowPlus.instance.hwnd, GWL_STYLE);
-    final fullscreen = !(style & WS_OVERLAPPEDWINDOW > 0);
+    final style = GetWindowLongPtr(
+        WindowPlus.instance.handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+    final fullscreen = !(style & WINDOW_STYLE.WS_OVERLAPPEDWINDOW > 0);
     return fullscreen
         ? SizedBox(
             width: double.infinity,

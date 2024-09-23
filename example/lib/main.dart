@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:window_plus/window_plus.dart';
@@ -12,8 +11,6 @@ Future<void> main() async {
     application: 'com.alexmercerind.window_plus',
   );
   await WindowPlus.instance.setMinimumSize(const Size(800, 600));
-  final minimumSize = await WindowPlus.instance.minimumSize;
-  debugPrint('MinWidth: ${minimumSize.width}, MinHeight: ${minimumSize.height}');
   WindowPlus.instance.setWindowCloseHandler(() async {
     bool result = false;
     await showDialog(
@@ -72,23 +69,6 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: const ColorScheme(
-          brightness: Brightness.light,
-          primary: Color(0xFF6200EA),
-          onPrimary: Color(0xFFFFFFFF),
-          secondary: Color(0xFF1DE9B6),
-          onSecondary: Color(0xFF000000),
-          error: Color(0xFFFF0000),
-          onError: Color(0xFFFFFFFF),
-          background: Color(0xFFFFFFFF),
-          onBackground: Color(0xFF000000),
-          surface: Color(0xFFFFFFFF),
-          onSurface: Color(0xFF000000),
-        ),
-        // Change few things in [ThemeData] to make things look better on Windows & Linux.
-        fontFamily: Platform.isLinux ? 'Inter' : null,
-      ),
       home: LayoutBuilder(
         builder: (context, _) {
           return Scaffold(
@@ -99,16 +79,12 @@ class _MyAppState extends State<MyApp> {
                       onPressed: () {},
                     )
                   : FloatingActionButton(
-                      tooltip: snapshot.data!
-                          ? 'exit fullscreen'
-                          : 'enter fullscreen',
+                      tooltip: snapshot.data! ? 'exit fullscreen' : 'enter fullscreen',
                       onPressed: () {
                         WindowPlus.instance.setIsFullscreen(!snapshot.data!);
                       },
                       child: Icon(
-                        snapshot.data!
-                            ? Icons.fullscreen_exit
-                            : Icons.fullscreen,
+                        snapshot.data! ? Icons.fullscreen_exit : Icons.fullscreen,
                       ),
                     ),
             ),
@@ -192,12 +168,12 @@ class _MyAppState extends State<MyApp> {
                           const SizedBox(height: 16.0),
                           Wrap(
                             children: [
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 32.0),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'hwnd: ${WindowPlus.instance.hwnd}',
+                                    'handle: ${WindowPlus.instance.handle}',
                                   ),
                                   Text(
                                     'captionHeight: ${WindowPlus.instance.captionHeight}',
@@ -230,8 +206,7 @@ class _MyAppState extends State<MyApp> {
                                     builder: (context, snapshot) => Text(
                                       'fullscreenStream: ${snapshot.data}',
                                     ),
-                                    stream:
-                                        WindowPlus.instance.fullscreenStream,
+                                    stream: WindowPlus.instance.fullscreenStream,
                                   ),
                                   StreamBuilder(
                                     builder: (context, snapshot) => Text(
@@ -282,8 +257,7 @@ class _MyAppState extends State<MyApp> {
                                     future: WindowPlus.instance.position,
                                   ),
                                   FutureBuilder(
-                                    future:
-                                        WindowPlus.instance.savedWindowState,
+                                    future: WindowPlus.instance.savedWindowState,
                                     builder: (context, snapshot) => Text(
                                       'savedWindowState: ${snapshot.data}',
                                     ),
@@ -299,7 +273,7 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 16.0),
+                              const SizedBox(width: 32.0),
                             ],
                           ),
                           const SizedBox(height: 16.0),
@@ -325,6 +299,7 @@ class _MyAppState extends State<MyApp> {
                           ),
                           const SizedBox(height: 16.0),
                           Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               const SizedBox(width: 16.0),
                               const SizedBox(
@@ -334,8 +309,7 @@ class _MyAppState extends State<MyApp> {
                               const SizedBox(width: 16.0),
                               TextButton(
                                 onPressed: () async {
-                                  final position =
-                                      await WindowPlus.instance.position;
+                                  final position = await WindowPlus.instance.position;
                                   WindowPlus.instance.move(
                                     position.dx ~/ 1 - 10,
                                     position.dy ~/ 1,
@@ -346,8 +320,7 @@ class _MyAppState extends State<MyApp> {
                               const SizedBox(width: 16.0),
                               TextButton(
                                 onPressed: () async {
-                                  final position =
-                                      await WindowPlus.instance.position;
+                                  final position = await WindowPlus.instance.position;
                                   WindowPlus.instance.move(
                                     position.dx ~/ 1 + 10,
                                     position.dy ~/ 1,
@@ -358,8 +331,7 @@ class _MyAppState extends State<MyApp> {
                               const SizedBox(width: 16.0),
                               TextButton(
                                 onPressed: () async {
-                                  final position =
-                                      await WindowPlus.instance.position;
+                                  final position = await WindowPlus.instance.position;
                                   WindowPlus.instance.move(
                                     position.dx ~/ 1,
                                     position.dy ~/ 1 - 10,
@@ -370,8 +342,7 @@ class _MyAppState extends State<MyApp> {
                               const SizedBox(width: 16.0),
                               TextButton(
                                 onPressed: () async {
-                                  final position =
-                                      await WindowPlus.instance.position;
+                                  final position = await WindowPlus.instance.position;
                                   WindowPlus.instance.move(
                                     position.dx ~/ 1,
                                     position.dy ~/ 1 + 10,
@@ -383,6 +354,7 @@ class _MyAppState extends State<MyApp> {
                             ],
                           ),
                           Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               const SizedBox(width: 16.0),
                               const SizedBox(
@@ -442,9 +414,7 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ],
                 ),
-                WindowCaption(
-                  brightness: Brightness.dark,
-                ),
+                WindowCaption(),
               ],
             ),
           );

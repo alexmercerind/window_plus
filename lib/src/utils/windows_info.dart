@@ -47,11 +47,7 @@ class WindowsInfo {
           ..wSuiteMask = 0
           ..wProductType = 0
           ..wReserved = 0;
-        final rtlGetVersion = DynamicLibrary.open(
-          'ntdll.dll',
-        ).lookupFunction<RtlGetVersionNative, RtlGetVersionDart>(
-          'RtlGetVersion',
-        );
+        final rtlGetVersion = DynamicLibrary.open('ntdll.dll').lookupFunction<RtlGetVersionNative, RtlGetVersionDart>('RtlGetVersion');
         rtlGetVersion(pointer);
         data = pointer.ref;
         isWindows10OrGreater = pointer.ref.dwBuildNumber >= _kWindows10RTM;

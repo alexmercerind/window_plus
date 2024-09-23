@@ -6,17 +6,9 @@
 
 import 'package:flutter/widgets.dart';
 
-typedef WindowButtonIconBuilder = Widget Function(
-  WindowButtonContext context,
-);
-typedef WindowButtonBuilder = Widget Function(
-  WindowButtonContext context,
-  Widget icon,
-);
-typedef MouseStateBuilderCallback = Widget Function(
-  BuildContext context,
-  MouseState state,
-);
+typedef WindowButtonIconBuilder = Widget Function(WindowButtonContext context);
+typedef WindowButtonBuilder = Widget Function(WindowButtonContext context, Widget icon);
+typedef MouseStateBuilderCallback = Widget Function(BuildContext context, MouseState state);
 
 class MouseState {
   bool isMouseOver = false;
@@ -87,8 +79,6 @@ class _FutureWidgetState<T> extends State<FutureWidget<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return data == null
-        ? widget.loading(context)
-        : widget.complete(context, data);
+    return data == null ? widget.loading(context) : widget.complete(context, data);
   }
 }
