@@ -152,8 +152,7 @@ class WindowState {
   Future<dynamic> methodCallHandler(MethodCall call) async {}
 
   /// Initializes the [WindowState].
-  /// This method is called through [WindowPlus.ensureInitialized] since it is asynchronous in nature.
-  Future<void> initialize() async {
+  Future<void> ensureInitialized() async {
     try {
       handle = await channel.invokeMethod(
         kEnsureInitializedMethodName,
