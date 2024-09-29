@@ -65,8 +65,6 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   int32_t GetDefaultWindowHeight();
 
-  // Replaces the existing |MoveWindow| behavior in Windows runner template to
-  // be more friendly to custom title-bar and frameless windows.
   void AlignChildContent();
 
   // Sets minimum size of the window.

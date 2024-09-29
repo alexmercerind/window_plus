@@ -174,13 +174,15 @@ int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
 
 void WindowPlusPlugin::AlignChildContent() {
   if (enable_custom_frame_) {
-    auto padding = GetDefaultWindowPadding();
     auto frame = RECT{};
     ::GetClientRect(GetWindow(), &frame);
-    // Make some room at the top, to prevent the shift of the content upon fresh launch in maximized state.
-    // Some additional reduction from bottom is needed in maximized state and NOT in fullscreen state.
-    auto bottom_clip = (::IsZoomed(GetWindow()) && !IsFullscreen() ? 2 : 1) * padding.y;
-    ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top + padding.y, frame.right - frame.left, frame.bottom - frame.top - bottom_clip, TRUE);
+    if (::IsZoomed(GetWindow()) && !IsFullscreen()) {
+      // Make some room at the top, to prevent the abrupt shift of the content upon fresh launch in maximized state.
+      auto padding = GetDefaultWindowPadding();
+      frame.top += padding.y;
+      frame.bottom -= padding.y;
+    }
+    ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, TRUE);
   } else {
     // No need to do this, if the custom frame is disabled.
     auto frame = RECT{};
@@ -299,54 +301,27 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
         return 0;
       }
       auto params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
-      // Adjust the window client area, so that content doesn't appear cropped
-      // out of the screen, when it is maximized.
-      auto monitor_rect = GetMonitorRect(false);
-      if (params->lppos) {
-        if ((params->lppos->x < monitor_rect.left) && (params->lppos->y < monitor_rect.top) && (params->lppos->cx > (monitor_rect.right - monitor_rect.left)) &&
-            (params->lppos->cy > (monitor_rect.bottom - monitor_rect.top))) {
-          params->lppos->x = monitor_rect.left;
-          params->lppos->cx = monitor_rect.right - monitor_rect.left;
-          // No need to modify the vertical alignment of the child |HWND| after |AlignChildContent| implementation has landed.
-          // params->lppos->y = monitor_rect.top;
-          // params->lppos->cy = monitor_rect.bottom - monitor_rect.top;
-        }
-      }
-      for (int32_t i = 0; i < 3; i++) {
-        if ((params->rgrc[i].left < monitor_rect.left) && (params->rgrc[i].top < monitor_rect.top) && (params->rgrc[i].right > monitor_rect.right) && (params->rgrc[i].bottom > monitor_rect.bottom)) {
-          params->rgrc[i].left = monitor_rect.left;
-          params->rgrc[i].right = monitor_rect.right;
-          // No need to modify the vertical alignment of the child |HWND| after |AlignChildContent| implementation has landed.
-          // params->rgrc[i].top = monitor_rect.top;
-          // params->rgrc[i].bottom = monitor_rect.bottom;
-        }
-      }
-      // Handle the window in restored state.
-      const POINT border = GetDefaultWindowPadding();
+
       if (::IsZoomed(GetWindow())) {
-        for (int32_t i = 0; i < 3; i++) {
-          params->rgrc[i].top -= 1;
-        }
-        // Post |AlignChildContent| implementation.
-        if (IsFullscreen()) {
-          for (int32_t i = 0; i < 3; i++) {
-            params->rgrc[i].top -= border.y;
-          }
-        }
+        // MAXIMIZED
+        // Adjust the window client area, so that content doesn't appear cropped out of the screen, when the window is maximized.
+        auto monitor_rect = GetMonitorRect(false);
+        params->rgrc[0].left = monitor_rect.left;
+        params->rgrc[0].right = monitor_rect.right;
+        // Get rid of that 1 pixel top border. It makes caption buttons hard to click.
+        params->rgrc[0].top -= 1;
+        // NOTE: The top should also be reduced, which is handled in the child window.
       } else {
-        // In Windows, when window frame (i.e. controls & border) is drawn, the space of the client is actually reduced to make space for the resize border (because WM_NCHHITTEST is only received
-        // inside client area). In modern Windows (i.e. 10 or 11), this space actually looks transparent, thus it feels like the resize border is outside client area but it is actually not, instead
-        // the actual client area size is reduced. The thing to note here is that the top border is not reduced. This is because we want to keep the top resize border.
-        //
-        // Only reduce the client area for |WM_NCHHITTEST| handling if the window is not fullscreen.
-        // Post |AlignChildContent| implementation.
-        params->rgrc[0].top -= border.y;
-        if (!IsFullscreen()) {
-          params->rgrc[0].bottom -= border.y;
-          params->rgrc[0].left += border.x;
-          params->rgrc[0].right -= border.x;
-        }
+        // RESTORED
+        // In Windows, when window frame is drawn, the client area is actually reduced to make space for the resize border (because WM_NCHHITTEST is only received inside client area). In modern
+        // Windows (i.e. 10 or 11), this space actually looks transparent. Thus, it feels like the resize border is outside the window but it is actually not.
+        // The important thing to note here is that the top border is not reduced.
+        auto padding = GetDefaultWindowPadding();
+        params->rgrc[0].left += padding.x;
+        params->rgrc[0].right -= padding.x;
+        params->rgrc[0].bottom -= padding.y;
       }
+
       return 0;
     }
     case WM_CLOSE: {
