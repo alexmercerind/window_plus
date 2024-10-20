@@ -317,9 +317,11 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
         // Windows (i.e. 10 or 11), this space actually looks transparent. Thus, it feels like the resize border is outside the window but it is actually not.
         // The important thing to note here is that the top border is not reduced.
         auto padding = GetDefaultWindowPadding();
-        params->rgrc[0].left += padding.x;
-        params->rgrc[0].right -= padding.x;
-        params->rgrc[0].bottom -= padding.y;
+        if (!IsFullscreen()) {
+          params->rgrc[0].left += padding.x;
+          params->rgrc[0].right -= padding.x;
+          params->rgrc[0].bottom -= padding.y;
+        }
       }
 
       return 0;
