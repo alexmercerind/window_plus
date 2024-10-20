@@ -272,16 +272,15 @@ Finally, forward the arguments to Dart / Flutter, with [`window_plus_plugin_hand
 ## Platforms
 
 - Windows
-- Linux
+- GNU/Linux
 
 ## Why
 
 [`package:window_plus`](https://github.com/alexmercerind/window_plus) is made to leverage requirements of [Harmonoid](https://github.com/harmonoid/harmonoid).
 
-Initially, [Harmonoid](https://github.com/harmonoid/harmonoid) used [`package:bitsdojo_window`](https://github.com/bitsdojo/bitsdojo_window) for a _modern-looking window_ on Windows.
-However, as time went by a number of issues were faced like:
+Initially, [Harmonoid](https://github.com/harmonoid/harmonoid) used [`package:bitsdojo_window`](https://github.com/bitsdojo/bitsdojo_window) for a _modern-looking window_ on Windows. However, as time went by a number of issues surfaced like:
 
-- Resize hit-box inside window (which made `Widget`s near window borders hard to interract e.g. scrollbar)
+- Resize border inside client area (which made `Widget`s near window borders hard to interract e.g. scrollbar).
 - Windows 7 support.
 - Other stability & crash issues.
 
@@ -291,12 +290,11 @@ This gave birth to [my fork of `package:bitsdojo_window`](https://github.com/ale
 - Remembering window position & state.
 - Fullscreen support.
 
-I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's _"not the trend"_. See: Discord, Visual Studio Code or Spotify. I believe ensuring compatibility with _all_ desktop environments like KDE, XFCE, GNOME & other tiling ones is far more important. So, best is to customize the native window behavior as less as possible on Linux. On the other hand, most GNU/Linux desktop environments offer various customization options for changing window controls' style/position, window's frame/border etc. anyway. This functionality of host OS would be unusable after implementing a custom frame & rendering custom title bar with Flutter.
-
+I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's _"not the trend"_. See: Discord, Visual Studio Code or Spotify. I believe ensuring compatibility with _all_ desktop environments like KDE, XFCE, GNOME & other tiling ones is far more important. So, best is to customize the native window behavior as less as possible on GNU/Linux. On the other hand, most GNU/Linux desktop environments offer various customization options for changing window controls' style/position, window's frame/border etc. anyway. This functionality of host OS would be unusable after implementing a custom frame & rendering custom title bar with Flutter.
 
 Stability & correct implementation is the primary concern here.
 
-Now, _i.e._ [`package:window_plus`](https://github.com/alexmercerind/window_plus) can serve as a starting point for applications other than [Harmonoid](https://github.com/harmonoid/harmonoid).
+Now, [`package:window_plus`](https://github.com/alexmercerind/window_plus) can serve as a starting point for applications other than [Harmonoid](https://github.com/harmonoid/harmonoid).
 
 ## License
 
