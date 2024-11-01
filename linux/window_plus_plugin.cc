@@ -7,25 +7,27 @@
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
 
+#include <iostream>
 #include <thread>
 
-// TODO(@alexmercerind): Refactor to use GObject.
+// TODO(alexmercerind): Refactor to use GObject.
 
 static constexpr auto kMethodChannelName = "com.alexmercerind/window_plus";
 
 // Common:
 
 static constexpr auto kEnsureInitializedMethodName = "ensureInitialized";
-static constexpr auto kCloseMethodName = "close";
-static constexpr auto kDestroyMethodName = "destroy";
-
+static constexpr auto kGetMinimumSizeMethodName = "getMinimumSize";
+static constexpr auto kSetMinimumSizeMethodName = "setMinimumSize";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
-static constexpr auto kSingleInstanceDataReceivedMethodName = "singleInstanceDataReceived";
 static constexpr auto kNotifyFirstFrameRasterizedMethodName = "notifyFirstFrameRasterized";
+static constexpr auto kSingleInstanceDataReceivedMethodName = "singleInstanceDataReceived";
 
 // GTK Exclusives:
 
 static constexpr auto kGetStateMethodName = "getState";
+static constexpr auto kCloseMethodName = "close";
+static constexpr auto kDestroyMethodName = "destroy";
 static constexpr auto kGetIsMinimizedMethodName = "getMinimized";
 static constexpr auto kGetIsMaximizedMethodName = "getMaximized";
 static constexpr auto kGetIsFullscreenMethodName = "getFullscreen";
@@ -46,7 +48,7 @@ static constexpr auto kShowMethodName = "show";
 static constexpr auto kWindowStateEventReceivedMethodName = "windowStateEventReceived";
 static constexpr auto kConfigureEventReceivedMethodName = "configureEventReceived";
 
-// TODO (@alexmercerind): Expose in public API.
+// TODO (alexmercerind): Expose in public API.
 
 static constexpr auto kMonitorSafeArea = 8;
 static constexpr auto kWindowDefaultWidth = 1280;
@@ -157,8 +159,17 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
         g_signal_connect(window, "configure-event", G_CALLBACK(configure_event), self);
       }
     }
-    // Handle `delete-event` signal for window close button interception.
+
+    // Disconnect all delete-event handlers first in flutter 3.10.1, which causes delete_event not working.
+    // Issues from flutter/engine: https://github.com/flutter/engine/pull/40033 
+    guint handler_id = g_signal_handler_find(window, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, view);
+    if (handler_id > 0) {
+      g_signal_handler_disconnect(window, handler_id);
+    }
+
+    // Handle delete-event signal for window close button interception.
     g_signal_connect(window, "delete-event", G_CALLBACK(delete_event), self);
+
     gint default_width = get_default_window_width(), default_height = get_default_window_height();
     gtk_window_set_default_size(window, default_width, default_height);
     GdkGeometry geometry;
@@ -263,6 +274,31 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
     gtk_widget_show(GTK_WIDGET(window));
     int64_t result = reinterpret_cast<int64_t>(window);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_int(result)));
+  } else if (strcmp(method, kSetMinimumSizeMethodName) == 0) {
+    FlValue* arguments = fl_method_call_get_args(method_call);
+    gint width = (gint)fl_value_get_float(fl_value_lookup_string(arguments, "width"));
+    gint height = (gint)fl_value_get_float(fl_value_lookup_string(arguments, "height"));
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWidget* window = GTK_WIDGET(gtk_widget_get_toplevel(view));
+    gtk_widget_set_size_request(window, width, height);
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
+  } else if (strcmp(method, kGetMinimumSizeMethodName) == 0) {
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWidget* window = GTK_WIDGET(gtk_widget_get_toplevel(view));
+    gint width = 0, height = 0;
+    gtk_widget_get_size_request(window, &width, &height);
+    FlValue* result = fl_value_new_map();
+    fl_value_set_string_take(result, "width", fl_value_new_float((gdouble)width));
+    fl_value_set_string_take(result, "height", fl_value_new_float((gdouble)height));
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
+  } else if (strcmp(method, kNotifyFirstFrameRasterizedMethodName) == 0) {
+    // TODO (alexmercerind): Missing implementation.
+    // Capture user focus & present the |window| on top of other windows.
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    gtk_window_present(window);
+    gtk_widget_grab_focus(view);
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kGetStateMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
@@ -286,7 +322,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
       }
     }
     auto result = fl_value_new_map();
-    // NOTE: Use existing cached |x|, |y|, |width| & |height| values if |maximized| is `TRUE` i.e. sent from Dart side.
+    // NOTE: Use existing cached |x|, |y|, |width| & |height| values if |maximized| is TRUE i.e. sent from Dart side.
     fl_value_set_string_take(result, "x", fl_value_new_int(x));
     fl_value_set_string_take(result, "y", fl_value_new_int(y));
     fl_value_set_string_take(result, "width", fl_value_new_int(width));
@@ -302,25 +338,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
     std::thread([=]() { g_signal_emit_by_name(G_OBJECT(window), "destroy"); }).detach();
-    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
-  } else if (strcmp(method, kSetIsFullscreenMethodName) == 0) {
-    FlValue* arguments = fl_method_call_get_args(method_call);
-    bool enabled = fl_value_get_bool(fl_value_lookup_string(arguments, "enabled"));
-    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
-    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    if (enabled) {
-      gtk_window_fullscreen(window);
-    } else {
-      gtk_window_unfullscreen(window);
-    }
-    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
-  } else if (strcmp(method, kNotifyFirstFrameRasterizedMethodName) == 0) {
-    // TODO (@alexmercerind): Missing implementation.
-    // Capture user focus & present the |window| on top of other windows.
-    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
-    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    gtk_window_present(window);
-    gtk_widget_grab_focus(view);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kGetIsMinimizedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
@@ -385,6 +402,17 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
       fl_value_append_take(result, fl_monitor);
     }
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
+  } else if (strcmp(method, kSetIsFullscreenMethodName) == 0) {
+    FlValue* arguments = fl_method_call_get_args(method_call);
+    bool enabled = fl_value_get_bool(fl_value_lookup_string(arguments, "enabled"));
+    GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
+    GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    if (enabled) {
+      gtk_window_fullscreen(window);
+    } else {
+      gtk_window_unfullscreen(window);
+    }
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kMaximizeMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));

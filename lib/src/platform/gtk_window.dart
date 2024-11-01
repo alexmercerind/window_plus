@@ -114,6 +114,19 @@ class GTKWindow extends PlatformWindow {
     return await channel.invokeMethod(kGetIsMaximizedMethodName);
   }
 
+  /// Gets the minimum size of the window on the screen.
+  @override
+  Future<Size> get minimumSize async {
+    ensureHandleAvailable();
+    final result = await channel.invokeMethod(
+      kGetMinimumSizeMethodName,
+    );
+    return Size(
+      (result['width'] as int).toDouble(),
+      (result['height'] as int).toDouble(),
+    );
+  }
+
   /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
@@ -147,6 +160,24 @@ class GTKWindow extends PlatformWindow {
       size['right'] * 1.0,
       size['bottom'] * 1.0,
     );
+  }
+
+  /// Sets the minimum size of the window holding Flutter view.
+  @override
+  Future<void> setMinimumSize(Size? size) async {
+    ensureHandleAvailable();
+    try {
+      await channel.invokeMethod(
+        kSetMinimumSizeMethodName,
+        {
+          'width': size?.width ?? 0,
+          'height': size?.height ?? 0,
+        },
+      );
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
+    }
   }
 
   /// Enables or disables the fullscreen mode.

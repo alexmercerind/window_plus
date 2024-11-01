@@ -218,17 +218,12 @@ Edit `windows/runner/win32_window.cpp` as:
 Edit `linux/my_application.cc` as:
 
 ```diff
--  gtk_widget_show(GTK_WIDGET(window));
-+  gtk_widget_realize(GTK_WIDGET(window));
-   g_autoptr(FlDartProject) project = fl_dart_project_new();
-   fl_dart_project_set_dart_entrypoint_arguments(
-       project, self->dart_entrypoint_arguments);
    FlView* view = fl_view_new(project);
--  gtk_widget_show(GTK_WIDGET(view));
-+  gtk_widget_realize(GTK_WIDGET(view));
+   gtk_widget_show(GTK_WIDGET(view));
    gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
    fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 -  gtk_widget_grab_focus(GTK_WIDGET(view));
++  gtk_widget_hide(GTK_WIDGET(window));
 ```
 
 ## Single Instance

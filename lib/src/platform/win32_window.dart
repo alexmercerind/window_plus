@@ -135,12 +135,12 @@ class Win32Window extends PlatformWindow {
   @override
   Future<Size> get minimumSize async {
     ensureHandleAvailable();
-    final Map<Object?, Object?> sizeMap = await channel.invokeMethod(
+    final result = await channel.invokeMethod(
       kGetMinimumSizeMethodName,
     );
     return Size(
-      (sizeMap['width'] as int).toDouble(),
-      (sizeMap['height'] as int).toDouble(),
+      (result['width'] as int).toDouble(),
+      (result['height'] as int).toDouble(),
     );
   }
 
