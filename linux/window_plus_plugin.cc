@@ -34,17 +34,14 @@ static constexpr auto kGetIsFullscreenMethodName = "getFullscreen";
 static constexpr auto kGetSizeMethodName = "getSize";
 static constexpr auto kGetPositionMethodName = "getPosition";
 static constexpr auto kGetMonitorsMethodName = "getMonitors";
-
 static constexpr auto kSetIsFullscreenMethodName = "setIsFullscreen";
 static constexpr auto kMaximizeMethodName = "maximize";
 static constexpr auto kRestoreMethodName = "restore";
 static constexpr auto kMinimizeMethodName = "minimize";
-
 static constexpr auto kMoveMethodName = "move";
 static constexpr auto kResizeMethodName = "resize";
 static constexpr auto kHideMethodName = "hide";
 static constexpr auto kShowMethodName = "show";
-
 static constexpr auto kWindowStateEventReceivedMethodName = "windowStateEventReceived";
 static constexpr auto kConfigureEventReceivedMethodName = "configureEventReceived";
 
@@ -53,8 +50,6 @@ static constexpr auto kConfigureEventReceivedMethodName = "configureEventReceive
 static constexpr auto kMonitorSafeArea = 8;
 static constexpr auto kWindowDefaultWidth = 1280;
 static constexpr auto kWindowDefaultHeight = 720;
-static constexpr auto kWindowDefaultMinimumWidth = 960;
-static constexpr auto kWindowDefaultMinimumHeight = 640;
 
 #define WINDOW_PLUS_PLUGIN(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), window_plus_plugin_get_type(), WindowPlusPlugin))
 
@@ -85,7 +80,7 @@ static gint get_default_window_width() {
   gdk_monitor_get_workarea(monitor, &workarea);
   gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
   if (success) {
-    gint monitor_width = workarea.width - 48;
+    gint monitor_width = workarea.width - 96;
     if (kWindowDefaultWidth > monitor_width) {
       return monitor_width;
     }
@@ -101,7 +96,7 @@ static gint get_default_window_height() {
   gdk_monitor_get_workarea(monitor, &workarea);
   gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
   if (success) {
-    gint monitor_height = workarea.height - 48;
+    gint monitor_height = workarea.height - 96;
     if (kWindowDefaultHeight > monitor_height) {
       return monitor_height;
     }
@@ -130,17 +125,26 @@ static gboolean window_state_event(GtkWidget* self, GdkEventWindowState* event, 
 
 gboolean configure_event(GtkWidget* self, GdkEventConfigure* event, gpointer user_data) {
   WindowPlusPlugin* plugin = WINDOW_PLUS_PLUGIN(user_data);
+  GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(plugin->registrar));
+  GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+
+  gint width = 0, height = 0;
+  gtk_window_get_size(window, &width, &height);
+
   g_autoptr(FlValue) arguments = fl_value_new_map();
+
   FlValue* position = fl_value_new_map();
-  fl_value_set_string_take(position, "dx", fl_value_new_int(event->x));
-  fl_value_set_string_take(position, "dy", fl_value_new_int(event->y));
+  fl_value_set_string_take(position, "x", fl_value_new_int(-1));
+  fl_value_set_string_take(position, "y", fl_value_new_int(-1));
+  fl_value_set_string_take(arguments, "position", position);
+
   FlValue* size = fl_value_new_map();
   fl_value_set_string_take(size, "left", fl_value_new_int(0));
   fl_value_set_string_take(size, "top", fl_value_new_int(0));
-  fl_value_set_string_take(size, "right", fl_value_new_int(event->width));
-  fl_value_set_string_take(size, "bottom", fl_value_new_int(event->height));
-  fl_value_set_string_take(arguments, "position", position);
+  fl_value_set_string_take(size, "width", fl_value_new_int(width));
+  fl_value_set_string_take(size, "height", fl_value_new_int(height));
   fl_value_set_string_take(arguments, "size", size);
+
   fl_method_channel_invoke_method(plugin->channel, kConfigureEventReceivedMethodName, arguments, NULL, NULL, NULL);
   return FALSE;
 }
@@ -151,6 +155,11 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
   if (strcmp(method, kEnsureInitializedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+
+    // Disconnect all delete-event handlers first in flutter 3.10.1, which causes delete_event not working.
+    // Issues from flutter/engine: https://github.com/flutter/engine/pull/40033
+    guint handler_id = g_signal_handler_find(window, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, view);
+
     FlValue* arguments = fl_method_call_get_args(method_call);
     FlValue* enable_event_streams = fl_value_lookup_string(arguments, "enableEventStreams");
     if (fl_value_get_type(enable_event_streams) == FL_VALUE_TYPE_BOOL) {
@@ -160,9 +169,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
       }
     }
 
-    // Disconnect all delete-event handlers first in flutter 3.10.1, which causes delete_event not working.
-    // Issues from flutter/engine: https://github.com/flutter/engine/pull/40033 
-    guint handler_id = g_signal_handler_find(window, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, view);
     if (handler_id > 0) {
       g_signal_handler_disconnect(window, handler_id);
     }
@@ -173,14 +179,12 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
     gint default_width = get_default_window_width(), default_height = get_default_window_height();
     gtk_window_set_default_size(window, default_width, default_height);
     GdkGeometry geometry;
-    geometry.min_width = kWindowDefaultMinimumWidth;
-    geometry.min_height = kWindowDefaultMinimumHeight;
     geometry.base_width = default_width;
     geometry.base_height = default_height;
-    gtk_window_set_geometry_hints(window, GTK_WIDGET(window), &geometry, static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE));
+    gtk_window_set_geometry_hints(window, GTK_WIDGET(window), &geometry, static_cast<GdkWindowHints>(GDK_HINT_BASE_SIZE));
     // Make |window| background black, to prevent a white splash on launch.
     g_autoptr(GtkCssProvider) style = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(style), "window { background:none; }", -1, nullptr);
+    gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(style), "GtkLayout { background-color: transparent; } GtkViewport { background-color: transparent; }", -1, nullptr);
     GdkScreen* screen = gtk_window_get_screen(window);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(style), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     try {
@@ -230,7 +234,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
           gdk_monitor_get_workarea(monitor, &workarea);
           gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
           if (success) {
-            // Make sure to clamp ignore |width| & |height| if they exceed the current workarea dimensions and use default dimensions instead.
             gtk_window_resize(window, default_width, default_height);
             gtk_window_set_position(window, GTK_WIN_POS_CENTER);
           }
@@ -249,7 +252,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
         gdk_monitor_get_workarea(monitor, &workarea);
         gboolean success = !(workarea.x == 0 && workarea.y == 0 && workarea.width == 0 && workarea.height == 0);
         if (success) {
-          // Make sure to clamp ignore |width| & |height| if they exceed the current workarea dimensions and use default dimensions instead.
           gtk_window_resize(window, default_width, default_height);
           gtk_window_set_position(window, GTK_WIN_POS_CENTER);
         }
@@ -269,9 +271,6 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
         gtk_window_set_position(window, GTK_WIN_POS_CENTER);
       }
     }
-    // Show the Flutter |view| & |window|.
-    gtk_widget_show(GTK_WIDGET(view));
-    gtk_widget_show(GTK_WIDGET(window));
     int64_t result = reinterpret_cast<int64_t>(window);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_int(result)));
   } else if (strcmp(method, kSetMinimumSizeMethodName) == 0) {
@@ -292,10 +291,12 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
     fl_value_set_string_take(result, "height", fl_value_new_float((gdouble)height));
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
   } else if (strcmp(method, kNotifyFirstFrameRasterizedMethodName) == 0) {
-    // TODO (alexmercerind): Missing implementation.
-    // Capture user focus & present the |window| on top of other windows.
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
+    // Show the Flutter |view| & |window|.
+    gtk_widget_show(GTK_WIDGET(view));
+    gtk_widget_show(GTK_WIDGET(window));
+    // Capture user focus & present the |window| on top of other windows.
     gtk_window_present(window);
     gtk_widget_grab_focus(view);
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
@@ -360,13 +361,13 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
   } else if (strcmp(method, kGetSizeMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    gint left = 0, top = 0, right = 0, bottom = 0;
-    gtk_window_get_size(window, &right, &bottom);
+    gint width = 0, height = 0;
+    gtk_window_get_size(window, &width, &height);
     auto result = fl_value_new_map();
-    fl_value_set_string_take(result, "left", fl_value_new_int(left));
-    fl_value_set_string_take(result, "top", fl_value_new_int(top));
-    fl_value_set_string_take(result, "right", fl_value_new_int(right));
-    fl_value_set_string_take(result, "bottom", fl_value_new_int(bottom));
+    fl_value_set_string_take(result, "left", fl_value_new_int(0));
+    fl_value_set_string_take(result, "top", fl_value_new_int(0));
+    fl_value_set_string_take(result, "width", fl_value_new_int(width));
+    fl_value_set_string_take(result, "height", fl_value_new_int(height));
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
   } else if (strcmp(method, kGetPositionMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
@@ -386,19 +387,24 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
       GdkRectangle workarea, bounds;
       gdk_monitor_get_workarea(monitor, &workarea);
       gdk_monitor_get_geometry(monitor, &bounds);
+
       auto fl_monitor = fl_value_new_map();
+
       FlValue* fl_workarea = fl_value_new_map();
       fl_value_set_string_take(fl_workarea, "left", fl_value_new_int(workarea.x));
       fl_value_set_string_take(fl_workarea, "top", fl_value_new_int(workarea.y));
-      fl_value_set_string_take(fl_workarea, "right", fl_value_new_int(workarea.width));
-      fl_value_set_string_take(fl_workarea, "bottom", fl_value_new_int(workarea.height));
+      fl_value_set_string_take(fl_workarea, "width", fl_value_new_int(workarea.width));
+      fl_value_set_string_take(fl_workarea, "height", fl_value_new_int(workarea.height));
+
       FlValue* fl_bounds = fl_value_new_map();
       fl_value_set_string_take(fl_bounds, "left", fl_value_new_int(bounds.x));
       fl_value_set_string_take(fl_bounds, "top", fl_value_new_int(bounds.y));
-      fl_value_set_string_take(fl_bounds, "right", fl_value_new_int(bounds.width));
-      fl_value_set_string_take(fl_bounds, "bottom", fl_value_new_int(bounds.height));
+      fl_value_set_string_take(fl_bounds, "width", fl_value_new_int(bounds.width));
+      fl_value_set_string_take(fl_bounds, "height", fl_value_new_int(bounds.height));
+
       fl_value_set_string_take(fl_monitor, "workarea", fl_workarea);
       fl_value_set_string_take(fl_monitor, "bounds", fl_bounds);
+
       fl_value_append_take(result, fl_monitor);
     }
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));

@@ -30,8 +30,7 @@ static void my_application_window_new(GApplication* application) {
     return;
   }
   // Create a new GtkWindow, Flutter engine & execute the Dart entry point.
-  GtkWindow* window =
-      GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  GtkWindow* window = GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
@@ -39,7 +38,7 @@ static void my_application_window_new(GApplication* application) {
   // in case the window manager does more exotic layout, e.g. tiling.
   // If running on Wayland assume the header bar will work (may need changing
   // if future cases occur).
-  gboolean use_header_bar = TRUE;
+  gboolean use_header_bar = FALSE;
 #ifdef GDK_WINDOWING_X11
   GdkScreen* screen = gtk_window_get_screen(window);
   if (GDK_IS_X11_SCREEN(screen)) {
@@ -58,16 +57,13 @@ static void my_application_window_new(GApplication* application) {
   } else {
     gtk_window_set_title(window, "window_plus_example");
   }
-  gtk_widget_show(GTK_WIDGET(window));
+  gtk_widget_realize(GTK_WIDGET(window));
   g_autoptr(FlDartProject) project = fl_dart_project_new();
-  fl_dart_project_set_dart_entrypoint_arguments(
-      project, self->dart_entrypoint_arguments);
+  fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
   FlView* view = fl_view_new(project);
-  gtk_widget_show(GTK_WIDGET(view));
+  gtk_widget_realize(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
-
-  gtk_widget_hide(GTK_WIDGET(window));
 }
 
 // Implements GApplication::activate.
@@ -86,8 +82,7 @@ static void my_application_activate(GApplication* application) {
 }
 
 // Implements GApplication::open.
-static void my_application_open(GApplication* application, GFile** files,
-                                gint n_files, const gchar* hint) {
+static void my_application_open(GApplication* application, GFile** files, gint n_files, const gchar* hint) {
   MyApplication* self = MY_APPLICATION(application);
   // MyApplication::dart_entrypoint_arguments handling.
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
@@ -107,14 +102,12 @@ static void my_application_open(GApplication* application, GFile** files,
 }
 
 // Implements GApplication::command_line.
-static gboolean my_application_command_line(
-    GApplication* application, GApplicationCommandLine* command_line) {
+static gboolean my_application_command_line(GApplication* application, GApplicationCommandLine* command_line) {
   MyApplication* self = MY_APPLICATION(application);
   // MyApplication::dart_entrypoint_arguments handling.
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
   // Strip out the first argument as it is the binary name.
-  gchar** arguments =
-      g_application_command_line_get_arguments(command_line, nullptr) + 1;
+  gchar** arguments = g_application_command_line_get_arguments(command_line, nullptr) + 1;
   self->dart_entrypoint_arguments = g_strdupv(arguments);
   if (!g_application_get_is_registered(application)) {
     g_autoptr(GError) error = nullptr;
@@ -143,8 +136,5 @@ static void my_application_class_init(MyApplicationClass* klass) {
 static void my_application_init(MyApplication* self) {}
 
 MyApplication* my_application_new() {
-  return MY_APPLICATION(g_object_new(
-      my_application_get_type(), "application-id", APPLICATION_ID, "flags",
-      G_APPLICATION_HANDLES_COMMAND_LINE | G_APPLICATION_HANDLES_OPEN,
-      nullptr));
+  return MY_APPLICATION(g_object_new(my_application_get_type(), "application-id", APPLICATION_ID, "flags", G_APPLICATION_HANDLES_COMMAND_LINE | G_APPLICATION_HANDLES_OPEN, nullptr));
 }
