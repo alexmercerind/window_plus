@@ -132,8 +132,8 @@ POINT WindowPlusPlugin::GetDefaultWindowPadding() {
 int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
   // Get the current monitor width excluding the taskbar.
   auto rect = GetMonitorRect(true);
-  rect.right -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
-  rect.bottom -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  rect.right -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
+  rect.bottom -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   auto monitor_width = static_cast<int32_t>(rect.right - rect.left);
 
   // Use 1280 as default width & clamp it to the monitor width.
@@ -160,8 +160,8 @@ void WindowPlusPlugin::SetMinimumSize(flutter::EncodableMap& args) {
 int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
   // Get the current monitor height excluding the taskbar.
   auto rect = GetMonitorRect(true);
-  rect.right -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
-  rect.bottom -= static_cast<int32_t>(24 * GetScaleFactorForWindow());
+  rect.right -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
+  rect.bottom -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   auto monitor_height = static_cast<int32_t>(rect.bottom - rect.top);
 
   // Use 720 as default height & clamp it to the monitor height.

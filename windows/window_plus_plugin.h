@@ -36,8 +36,6 @@ class WindowPlusPlugin : public flutter::Plugin {
   static constexpr auto kMonitorSafeArea = 8;
   static constexpr auto kWindowDefaultWidth = 1280;
   static constexpr auto kWindowDefaultHeight = 720;
-  static constexpr auto kWindowDefaultMinimumWidth = 960;
-  static constexpr auto kWindowDefaultMinimumHeight = 640;
 
   HWND GetWindow();
 
