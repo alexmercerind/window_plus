@@ -1,9 +1,3 @@
-// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
-//
-// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-//
-// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
-
 class SavedWindowState {
   final int x;
   final int y;
@@ -18,31 +12,6 @@ class SavedWindowState {
     this.height,
     this.maximized,
   );
-
-  factory SavedWindowState.fromJson(dynamic json) {
-    return SavedWindowState(
-      json['x'],
-      json['y'],
-      json['width'],
-      json['height'],
-      json['maximized'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'x': x,
-      'y': y,
-      'width': width,
-      'height': height,
-      'maximized': maximized,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'SavedWindowState(x: $x, y: $y, width: $width, height: $height, maximized: $maximized)';
-  }
 
   SavedWindowState copyWith({
     int? x,
@@ -59,4 +28,37 @@ class SavedWindowState {
       maximized ?? this.maximized,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SavedWindowState && runtimeType == other.runtimeType && x == other.x && y == other.y && width == other.width && height == other.height && maximized == other.maximized;
+
+  @override
+  int get hashCode => Object.hash(x, y, width, height, maximized);
+
+  @override
+  String toString() => 'SavedWindowState('
+      'x: $x, '
+      'y: $y, '
+      'width: $width, '
+      'height: $height, '
+      'maximized: $maximized'
+      ')';
+
+  Map<String, dynamic> toJson() => {
+        'x': x,
+        'y': y,
+        'width': width,
+        'height': height,
+        'maximized': maximized,
+      };
+
+  factory SavedWindowState.fromJson(dynamic json) => SavedWindowState(
+        json['x'],
+        json['y'],
+        json['width'],
+        json['height'],
+        json['maximized'],
+      );
 }

@@ -1,9 +1,3 @@
-// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
-//
-// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-//
-// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
-
 import 'package:flutter/widgets.dart';
 
 // --------------------------------------------------
@@ -22,7 +16,7 @@ class _ClosePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color, context)..isAntiAlias = true;
+    final p = getPaint(color, context)..isAntiAlias = true;
     canvas.drawLine(const Offset(0.0, 0.0), Offset(size.width, size.height), p);
     canvas.drawLine(Offset(0.0, size.height), Offset(size.width, 0.0), p);
   }
@@ -44,7 +38,7 @@ class _MaximizePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color, context);
+    final p = getPaint(color, context);
     canvas.drawRect(Rect.fromLTRB(0, 0, size.width - 1, size.height - 1), p);
   }
 }
@@ -65,7 +59,7 @@ class _RestorePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color, context);
+    final p = getPaint(color, context);
     canvas.drawRect(Rect.fromLTRB(0.0, 2.0, size.width - 2.0, size.height), p);
     canvas.drawLine(const Offset(2.0, 2.0), const Offset(2.0, 0.0), p);
     canvas.drawLine(const Offset(2.0, 0.0), Offset(size.width, 0), p);
@@ -90,7 +84,7 @@ class _MinimizePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color, context);
+    final p = getPaint(color, context);
     canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), p);
   }
 }

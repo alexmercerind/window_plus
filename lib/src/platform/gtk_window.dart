@@ -1,9 +1,3 @@
-// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
-//
-// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-//
-// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
-
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -12,7 +6,6 @@ import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/models/monitor.dart';
 import 'package:window_plus/src/platform/platform_window.dart';
 
-/// Linux implementation for [PlatformWindow].
 class GTKWindow extends PlatformWindow {
   GTKWindow({
     required super.application,
@@ -46,16 +39,16 @@ class GTKWindow extends PlatformWindow {
           try {
             positionStreamController.add(
               Offset(
-                call.arguments['position']['dx'] * 1.0,
-                call.arguments['position']['dy'] * 1.0,
+                call.arguments['position']['x'] * 1.0,
+                call.arguments['position']['y'] * 1.0,
               ),
             );
             sizeStreamController.add(
-              Rect.fromLTRB(
+              Rect.fromLTWH(
                 call.arguments['size']['left'] * 1.0,
                 call.arguments['size']['top'] * 1.0,
-                call.arguments['size']['right'] * 1.0,
-                call.arguments['size']['bottom'] * 1.0,
+                call.arguments['size']['width'] * 1.0,
+                call.arguments['size']['height'] * 1.0,
               ),
             );
           } catch (exception, stacktrace) {
@@ -84,7 +77,7 @@ class GTKWindow extends PlatformWindow {
             debugPrint(exception.toString());
             debugPrint(stacktrace.toString());
           }
-          // Call the public handler.
+
           final result = (await windowCloseHandler?.call()) ?? true;
           if (result) {
             destroy();
@@ -100,21 +93,18 @@ class GTKWindow extends PlatformWindow {
     }
   }
 
-  /// Whether the window is minimized.
   @override
   Future<bool> get minimized async {
     ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsMinimizedMethodName);
   }
 
-  /// Whether the window is maximized.
   @override
   Future<bool> get maximized async {
     ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsMaximizedMethodName);
   }
 
-  /// Gets the minimum size of the window on the screen.
   @override
   Future<Size> get minimumSize async {
     ensureHandleAvailable();
@@ -127,14 +117,12 @@ class GTKWindow extends PlatformWindow {
     );
   }
 
-  /// Whether the window is fullscreen.
   @override
   Future<bool> get fullscreen async {
     ensureHandleAvailable();
     return await channel.invokeMethod(kGetIsFullscreenMethodName);
   }
 
-  /// Gets the position of the window on the screen.
   @override
   Future<Offset> get position async {
     ensureHandleAvailable();
@@ -147,22 +135,20 @@ class GTKWindow extends PlatformWindow {
     );
   }
 
-  /// Gets the size of the window on the screen.
   @override
   Future<Rect> get size async {
     ensureHandleAvailable();
     final size = await channel.invokeMethod(
       kGetSizeMethodName,
     );
-    return Rect.fromLTRB(
+    return Rect.fromLTWH(
       size['left'] * 1.0,
       size['top'] * 1.0,
-      size['right'] * 1.0,
-      size['bottom'] * 1.0,
+      size['width'] * 1.0,
+      size['height'] * 1.0,
     );
   }
 
-  /// Sets the minimum size of the window holding Flutter view.
   @override
   Future<void> setMinimumSize(Size? size) async {
     ensureHandleAvailable();
@@ -180,11 +166,6 @@ class GTKWindow extends PlatformWindow {
     }
   }
 
-  /// Enables or disables the fullscreen mode.
-  ///
-  /// If [enabled] is `true`, the window will be made fullscreen.
-  /// Once [enabled] is passed as `false` in future, window will be restored back to it's prior state i.e. maximized or restored at same position & size.
-  ///
   @override
   Future<void> setIsFullscreen(bool enabled) async {
     ensureHandleAvailable();
@@ -196,50 +177,36 @@ class GTKWindow extends PlatformWindow {
     );
   }
 
-  /// Maximizes the window holding Flutter view.
   @override
   Future<void> maximize() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kMaximizeMethodName);
   }
 
-  /// Restores the window holding Flutter view.
   @override
   Future<void> restore() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kRestoreMethodName);
   }
 
-  /// Minimizes the window holding Flutter view.
   @override
   Future<void> minimize() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kMinimizeMethodName);
   }
 
-  /// Closes the window holding Flutter view.
-  ///
-  /// This method respects the callback set by [setWindowCloseHandler] & saves window state before exit.
-  ///
-  /// If the set callback returns `false`, the window will not be closed.
-  ///
   @override
   Future<void> close() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kCloseMethodName);
   }
 
-  /// Destroys the window holding Flutter view.
-  ///
-  /// This method does not respect the callback set by [setWindowCloseHandler] & does not save window state before exit.
-  ///
   @override
   Future<void> destroy() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kDestroyMethodName);
   }
 
-  /// Moves (or sets position of the window) holding Flutter view on the screen.
   @override
   Future<void> move(int x, int y) async {
     ensureHandleAvailable();
@@ -252,7 +219,6 @@ class GTKWindow extends PlatformWindow {
     );
   }
 
-  /// Resizes (or sets size of the window) holding Flutter view on the screen.
   @override
   Future<void> resize(int width, int height) async {
     ensureHandleAvailable();
@@ -265,14 +231,12 @@ class GTKWindow extends PlatformWindow {
     );
   }
 
-  /// Hides the window holding Flutter view.
   @override
   Future<void> hide() async {
     ensureHandleAvailable();
     await channel.invokeMethod(kHideMethodName);
   }
 
-  /// Shows the window holding Flutter view.
   @override
   Future<void> show() async {
     ensureHandleAvailable();
@@ -286,17 +250,17 @@ class GTKWindow extends PlatformWindow {
     return List<Monitor>.from(
       monitors.map(
         (monitor) => Monitor(
-          Rect.fromLTRB(
+          Rect.fromLTWH(
             monitor['workarea']['left'] * 1.0,
             monitor['workarea']['top'] * 1.0,
-            monitor['workarea']['right'] * 1.0,
-            monitor['workarea']['bottom'] * 1.0,
+            monitor['workarea']['width'] * 1.0,
+            monitor['workarea']['height'] * 1.0,
           ),
-          Rect.fromLTRB(
+          Rect.fromLTWH(
             monitor['bounds']['left'] * 1.0,
             monitor['bounds']['top'] * 1.0,
-            monitor['bounds']['right'] * 1.0,
-            monitor['bounds']['bottom'] * 1.0,
+            monitor['bounds']['width'] * 1.0,
+            monitor['bounds']['height'] * 1.0,
           ),
         ),
       ),

@@ -1,30 +1,17 @@
-// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
-//
-// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-//
-// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
-
 import 'dart:io';
 import 'package:win32/win32.dart';
 import 'package:flutter/material.dart';
 
 import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_plus.dart';
-import 'package:window_plus/src/widgets/utils.dart';
-import 'package:window_plus/src/widgets/icons.dart';
+import 'package:window_plus/src/widgets/win32/utils.dart';
+import 'package:window_plus/src/widgets/win32/icons.dart';
 
-/// A widget that is used to draw the draggable area of the window i.e. title bar.
-/// Any click event on this widget will result in window being dragged by the user.
-///
-/// [WindowPlus.captionHeight] may be used to retrieve the height of the caption area.
-///
 class WindowCaptionArea extends StatelessWidget {
   final Widget? child;
   final double? width;
   final double? height;
 
-  // Force re-rendering when the window DPI is changed.
-  // ignore: prefer_const_constructors_in_immutables
   WindowCaptionArea({
     Key? key,
     this.child,
@@ -71,8 +58,6 @@ class WindowButton extends StatelessWidget {
   final EdgeInsets? padding;
   final VoidCallback? onPressed;
 
-  // Force re-rendering when the window DPI is changed.
-  // ignore: prefer_const_constructors_in_immutables
   WindowButton({
     Key? key,
     required this.colors,
@@ -107,12 +92,8 @@ class WindowButton extends StatelessWidget {
         );
         final icon = iconBuilder?.call(button) ?? Container();
         final borderSize = WindowPlus.instance.captionPadding;
-        double defaultPadding =
-            (WindowPlus.instance.captionHeight - borderSize) / 3 -
-                (borderSize / 2);
-        final fadeOutColor =
-            getBackgroundColor(MouseState()..isMouseOver = true)
-                .withOpacity(0.0);
+        double defaultPadding = (WindowPlus.instance.captionHeight - borderSize) / 3 - (borderSize / 2);
+        final fadeOutColor = getBackgroundColor(MouseState()..isMouseOver = true).withOpacity(0.0);
         final padding = this.padding ?? EdgeInsets.all(defaultPadding);
         final child = Padding(
           padding: padding,
@@ -121,8 +102,7 @@ class WindowButton extends StatelessWidget {
         return AnimatedContainer(
           curve: Curves.easeOut,
           duration: Duration(
-            milliseconds:
-                state.isMouseOver ? (animate ? 100 : 0) : (animate ? 200 : 0),
+            milliseconds: state.isMouseOver ? (animate ? 100 : 0) : (animate ? 200 : 0),
           ),
           color: button.backgroundColor ?? fadeOutColor,
           width: WindowPlus.instance.captionButtonSize.width,
@@ -140,8 +120,6 @@ class WindowMinimizeButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool animate;
 
-  // Force re-rendering when the window DPI is changed.
-  // ignore: prefer_const_constructors_in_immutables
   WindowMinimizeButton({
     Key? key,
     this.colors,
@@ -153,22 +131,12 @@ class WindowMinimizeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = this.colors ??
         WindowButtonColors(
-          iconNormal: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
+          iconNormal: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
           normal: Colors.transparent,
-          mouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.04)
-              : const Color(0xFF000000).withOpacity(0.04),
-          mouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.08)
-              : const Color(0xFF000000).withOpacity(0.08),
+          mouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.04) : const Color(0xFF000000).withOpacity(0.04),
+          mouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.08) : const Color(0xFF000000).withOpacity(0.08),
         );
     return WindowButton(
       key: key,
@@ -198,22 +166,12 @@ class WindowMaximizeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = this.colors ??
         WindowButtonColors(
-          iconNormal: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
+          iconNormal: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
           normal: Colors.transparent,
-          mouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.04)
-              : const Color(0xFF000000).withOpacity(0.04),
-          mouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.08)
-              : const Color(0xFF000000).withOpacity(0.08),
+          mouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.04) : const Color(0xFF000000).withOpacity(0.04),
+          mouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.08) : const Color(0xFF000000).withOpacity(0.08),
         );
     return WindowButton(
       key: key,
@@ -243,22 +201,12 @@ class WindowRestoreButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = this.colors ??
         WindowButtonColors(
-          iconNormal: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
-          iconMouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
+          iconNormal: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+          iconMouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
           normal: Colors.transparent,
-          mouseOver: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.04)
-              : const Color(0xFF000000).withOpacity(0.04),
-          mouseDown: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF).withOpacity(0.08)
-              : const Color(0xFF000000).withOpacity(0.08),
+          mouseOver: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.04) : const Color(0xFF000000).withOpacity(0.04),
+          mouseDown: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF).withOpacity(0.08) : const Color(0xFF000000).withOpacity(0.08),
         );
     return WindowButton(
       key: key,
@@ -277,8 +225,6 @@ class WindowCloseButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool animate;
 
-  // Force re-rendering when the window DPI is changed.
-  // ignore: prefer_const_constructors_in_immutables
   WindowCloseButton({
     Key? key,
     this.colors,
@@ -290,9 +236,7 @@ class WindowCloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = this.colors ??
         WindowButtonColors(
-          iconNormal: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF000000),
+          iconNormal: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
           iconMouseDown: const Color(0xFFFFFFFF),
           iconMouseOver: const Color(0xFFFFFFFF),
           normal: const Color(0x00000000),
@@ -316,8 +260,6 @@ class WindowRestoreMaximizeButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool animate;
 
-  // Force re-rendering when the window is maximized or restored.
-  // ignore: prefer_const_constructors_in_immutables
   WindowRestoreMaximizeButton({
     Key? key,
     this.colors,
@@ -404,8 +346,6 @@ class MouseStateBuilderState extends State<MouseStateBuilder> {
 class WindowCaption extends StatefulWidget {
   final Widget? child;
   final Brightness? brightness;
-  // Force re-rendering when the window is maximized or restored.
-  // ignore: prefer_const_constructors_in_immutables
   WindowCaption({
     Key? key,
     this.child,
@@ -419,11 +359,10 @@ class WindowCaption extends StatefulWidget {
 class _WindowCaptionState extends State<WindowCaption> {
   @override
   Widget build(BuildContext context) {
-    if (!WindowPlus.instance.enableCustomFrame || !Platform.isWindows) {
+    if (!(WindowPlus.instance.enableCustomFrame && Platform.isWindows)) {
       return const SizedBox.shrink();
     }
-    final style = GetWindowLongPtr(
-        WindowPlus.instance.handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+    final style = GetWindowLongPtr(WindowPlus.instance.handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
     final fullscreen = !(style & WINDOW_STYLE.WS_OVERLAPPEDWINDOW > 0);
     return fullscreen
         ? SizedBox(
@@ -439,12 +378,7 @@ class _WindowCaptionState extends State<WindowCaption> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: WindowCaptionArea(
-                      height: WindowPlus.instance.captionHeight,
-                      child: widget.child,
-                    ),
-                  ),
+                  Expanded(child: WindowCaptionArea(height: WindowPlus.instance.captionHeight, child: widget.child)),
                   WindowMinimizeButton(),
                   WindowRestoreMaximizeButton(),
                   WindowCloseButton(),

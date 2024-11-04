@@ -1,9 +1,3 @@
-// This file is a part of window_plus (https://github.com/alexmercerind/window_plus).
-//
-// Copyright (c) 2022 & onwards, Hitesh Kumar Saini <saini123hitesh@gmail.com>.
-//
-// All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
-
 import 'dart:io';
 
 import 'package:window_plus/src/utils/windows_info.dart';
@@ -15,28 +9,11 @@ import 'package:window_plus/src/platform/platform_window.dart';
 ///
 /// WindowPlus
 /// ----------
-/// The application must call [ensureInitialized] before making use of API from the package.
-///
-/// e.g.
-///
-/// ```dart
-/// Future<void> main() async {
-///   WidgetsFlutterBinding.ensureInitialized();
-///   await WindowPlus.ensureInitialized(
-///     application: 'com.example.counter_app',
-///   );
-///   runApp(const MyApp());
-/// }
-/// ```
 ///
 /// {@endtemplate}
 class WindowPlus {
   /// Singleton instance.
-  static PlatformWindow instance = PlatformWindow(
-    application: 'com.window_plus.uninitialized',
-    enableCustomFrame: false,
-    enableEventStreams: false,
-  );
+  static late final PlatformWindow instance;
 
   /// Whether the [instance] is initialized.
   static bool initialized = false;
@@ -62,20 +39,18 @@ class WindowPlus {
   }) async {
     if (initialized) return;
     initialized = true;
-    enableCustomFrame ??= WindowsInfo.instance.isWindows10OrGreater;
+    enableCustomFrame ??= WindowsInfo.instance.isWindows10RS1OrGreater;
     enableEventStreams ??= true;
     if (Platform.isMacOS) {
-      // TODO: If someone sees this & wants to help, please do.
-    }
-    if (Platform.isWindows) {
+      // TODO: Missing implementation.
+    } else if (Platform.isWindows) {
       instance = Win32Window(
         application: application,
         enableCustomFrame: enableCustomFrame,
         enableEventStreams: enableEventStreams,
       );
       await instance.ensureInitialized();
-    }
-    if (Platform.isLinux) {
+    } else if (Platform.isLinux) {
       instance = GTKWindow(
         application: application,
         enableCustomFrame: enableCustomFrame,
