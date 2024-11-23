@@ -22,15 +22,12 @@ static constexpr auto kSetMinimumSizeMethodName = "setMinimumSize";
 static constexpr auto kWindowCloseReceivedMethodName = "windowCloseReceived";
 static constexpr auto kNotifyFirstFrameRasterizedMethodName = "notifyFirstFrameRasterized";
 static constexpr auto kSingleInstanceDataReceivedMethodName = "singleInstanceDataReceived";
-
-// GTK Exclusives:
-
 static constexpr auto kGetStateMethodName = "getState";
 static constexpr auto kCloseMethodName = "close";
 static constexpr auto kDestroyMethodName = "destroy";
 static constexpr auto kGetIsMinimizedMethodName = "getMinimized";
 static constexpr auto kGetIsMaximizedMethodName = "getMaximized";
-static constexpr auto kGetIsFullscreenMethodName = "getFullscreen";
+static constexpr auto kGetIsFullscreenMethodName = "getIsFullscreen";
 static constexpr auto kGetSizeMethodName = "getSize";
 static constexpr auto kGetPositionMethodName = "getPosition";
 static constexpr auto kGetMonitorsMethodName = "getMonitors";
@@ -42,6 +39,9 @@ static constexpr auto kMoveMethodName = "move";
 static constexpr auto kResizeMethodName = "resize";
 static constexpr auto kHideMethodName = "hide";
 static constexpr auto kShowMethodName = "show";
+
+// GTK Exclusives:
+
 static constexpr auto kWindowStateEventReceivedMethodName = "windowStateEventReceived";
 static constexpr auto kConfigureEventReceivedMethodName = "configureEventReceived";
 

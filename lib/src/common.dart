@@ -12,22 +12,12 @@ const String kSetMinimumSizeMethodName = 'setMinimumSize';
 const String kWindowCloseReceivedMethodName = 'windowCloseReceived';
 const String kNotifyFirstFrameRasterizedMethodName = 'notifyFirstFrameRasterized';
 const String kSingleInstanceDataReceivedMethodName = 'singleInstanceDataReceived';
-
-// Win32 Exclusives:
-
-const String kWindowMovedMethodName = 'windowMoved';
-const String kWindowResizedMethodName = 'windowResized';
-const String kWindowActivatedMethodName = 'windowActivated';
-const String kWindowFullScreenMethodName = 'windowFullScreen';
-
-// GTK Exclusives:
-
 const String kGetStateMethodName = 'getState';
 const String kCloseMethodName = 'close';
 const String kDestroyMethodName = 'destroy';
 const String kGetIsMinimizedMethodName = 'getMinimized';
 const String kGetIsMaximizedMethodName = 'getMaximized';
-const String kGetIsFullscreenMethodName = 'getFullscreen';
+const String kGetIsFullscreenMethodName = 'getIsFullscreen';
 const String kGetSizeMethodName = 'getSize';
 const String kGetPositionMethodName = 'getPosition';
 const String kGetMonitorsMethodName = 'getMonitors';
@@ -39,12 +29,26 @@ const String kMoveMethodName = 'move';
 const String kResizeMethodName = 'resize';
 const String kHideMethodName = 'hide';
 const String kShowMethodName = 'show';
+
+// macOS Exclusives:
+
+const String kGetCaptionHeight = 'getCaptionHeight';
+
+// Win32 Exclusives:
+
+const String kWindowMovedMethodName = 'windowMoved';
+const String kWindowResizedMethodName = 'windowResized';
+const String kWindowActivatedMethodName = 'windowActivated';
+const String kWindowFullScreenMethodName = 'windowFullScreen';
+
+// GTK Exclusives:
+
 const String kWindowStateEventReceivedMethodName = 'windowStateEventReceived';
 const String kConfigureEventReceivedMethodName = 'configureEventReceived';
 
 // Win32 Constants:
 
 const String kWin32FlutterViewWindowClass = 'FLUTTERVIEW';
-const int kMaximumMonitorCount = 16;
+const int kWin32MaximumMonitorCount = 16;
 const int WM_CAPTIONAREA = WM_USER + 0x0009;
 const int WM_NOTIFYDESTROY = WM_USER + 0x000A;

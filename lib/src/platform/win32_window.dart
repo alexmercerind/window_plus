@@ -162,23 +162,6 @@ class Win32Window extends PlatformWindow {
   }
 
   @override
-  Future<void> setMinimumSize(Size? size) async {
-    ensureHandleAvailable();
-    try {
-      await channel.invokeMethod(
-        kSetMinimumSizeMethodName,
-        {
-          'width': size?.width ?? 0,
-          'height': size?.height ?? 0,
-        },
-      );
-    } catch (exception, stacktrace) {
-      debugPrint(exception.toString());
-      debugPrint(stacktrace.toString());
-    }
-  }
-
-  @override
   Future<void> setIsFullscreen(bool enabled) async {
     ensureHandleAvailable();
     final style = GetWindowLongPtr(handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
@@ -251,6 +234,23 @@ class Win32Window extends PlatformWindow {
         calloc.free(rect);
         calloc.free(flutterWindowClassName);
       }
+    }
+  }
+
+  @override
+  Future<void> setMinimumSize(Size? size) async {
+    ensureHandleAvailable();
+    try {
+      await channel.invokeMethod(
+        kSetMinimumSizeMethodName,
+        {
+          'width': size?.width ?? 0,
+          'height': size?.height ?? 0,
+        },
+      );
+    } catch (exception, stacktrace) {
+      debugPrint(exception.toString());
+      debugPrint(stacktrace.toString());
     }
   }
 
@@ -350,7 +350,7 @@ class Win32Window extends PlatformWindow {
   @override
   Future<List<Monitor>> get monitors async {
     final data = calloc<_MonitorsUserData>();
-    final monitors = calloc<_Monitor>(kMaximumMonitorCount);
+    final monitors = calloc<_Monitor>(kWin32MaximumMonitorCount);
     data.ref.count = 0;
     data.ref.monitors = monitors;
     final result = <Monitor>[];

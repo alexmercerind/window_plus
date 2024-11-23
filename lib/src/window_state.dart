@@ -56,7 +56,7 @@ class WindowState {
   Future<void> save() async {
     ensureHandleAvailable();
     if (Platform.isMacOS) {
-      // TODO: Missing implementation.
+      // NO/OP
     } else if (Platform.isWindows) {
       if (IsIconic(handle) == 0) {
         final maximized = IsZoomed(handle) != 0;
@@ -100,7 +100,7 @@ class WindowState {
 
   static String getStoragePath(String application) {
     if (Platform.isMacOS) {
-      // TODO: Missing implementation.
+      // NO/OP
     } else if (Platform.isWindows) {
       final rfid = GUIDFromString(FOLDERID_RoamingAppData);
       final result = calloc<PWSTR>();

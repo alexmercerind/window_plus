@@ -1,6 +1,7 @@
-import 'dart:io';
-import 'package:win32/win32.dart';
+// ignore_for_file: prefer_const_constructors_in_immutables
+
 import 'package:flutter/material.dart';
+import 'package:win32/win32.dart';
 
 import 'package:window_plus/src/common.dart';
 import 'package:window_plus/src/window_plus.dart';
@@ -343,7 +344,7 @@ class MouseStateBuilderState extends State<MouseStateBuilder> {
   }
 }
 
-class WindowCaption extends StatefulWidget {
+class WindowCaption extends StatelessWidget {
   final Widget? child;
   final Brightness? brightness;
   WindowCaption({
@@ -353,38 +354,36 @@ class WindowCaption extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<WindowCaption> createState() => _WindowCaptionState();
-}
-
-class _WindowCaptionState extends State<WindowCaption> {
-  @override
   Widget build(BuildContext context) {
-    if (!(WindowPlus.instance.enableCustomFrame && Platform.isWindows)) {
+    if (!WindowPlus.instance.enableCustomFrame) {
       return const SizedBox.shrink();
     }
-    final style = GetWindowLongPtr(WindowPlus.instance.handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
-    final fullscreen = !(style & WINDOW_STYLE.WS_OVERLAPPEDWINDOW > 0);
-    return fullscreen
-        ? SizedBox(
-            width: double.infinity,
-            height: WindowPlus.instance.captionHeight,
-          )
-        : SizedBox(
-            width: double.infinity,
-            height: WindowPlus.instance.captionHeight,
-            child: Theme(
-              data: Theme.of(context).copyWith(brightness: widget.brightness),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(child: WindowCaptionArea(height: WindowPlus.instance.captionHeight, child: widget.child)),
-                  WindowMinimizeButton(),
-                  WindowRestoreMaximizeButton(),
-                  WindowCloseButton(),
-                ],
-              ),
-            ),
-          );
+    return FutureBuilder<bool>(
+      future: WindowPlus.instance.fullscreen,
+      builder: (context, snapshot) {
+        return snapshot.data == true
+            ? SizedBox(
+                width: double.infinity,
+                height: WindowPlus.instance.captionHeight,
+              )
+            : SizedBox(
+                width: double.infinity,
+                height: WindowPlus.instance.captionHeight,
+                child: Theme(
+                  data: Theme.of(context).copyWith(brightness: brightness),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: WindowCaptionArea(height: WindowPlus.instance.captionHeight, child: child)),
+                      WindowMinimizeButton(),
+                      WindowRestoreMaximizeButton(),
+                      WindowCloseButton(),
+                    ],
+                  ),
+                ),
+              );
+      },
+    );
   }
 }

@@ -150,6 +150,17 @@ class GTKWindow extends PlatformWindow {
   }
 
   @override
+  Future<void> setIsFullscreen(bool enabled) async {
+    ensureHandleAvailable();
+    await channel.invokeMethod(
+      kSetIsFullscreenMethodName,
+      {
+        'enabled': enabled,
+      },
+    );
+  }
+
+  @override
   Future<void> setMinimumSize(Size? size) async {
     ensureHandleAvailable();
     try {
@@ -164,17 +175,6 @@ class GTKWindow extends PlatformWindow {
       debugPrint(exception.toString());
       debugPrint(stacktrace.toString());
     }
-  }
-
-  @override
-  Future<void> setIsFullscreen(bool enabled) async {
-    ensureHandleAvailable();
-    await channel.invokeMethod(
-      kSetIsFullscreenMethodName,
-      {
-        'enabled': enabled,
-      },
-    );
   }
 
   @override
