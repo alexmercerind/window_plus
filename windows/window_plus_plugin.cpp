@@ -144,19 +144,6 @@ int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
   return width;
 }
 
-void WindowPlusPlugin::SetMinimumSize(flutter::EncodableMap& args) {
-  auto width = std::get<double>(args.at(flutter::EncodableValue("width")));
-  auto height = std::get<double>(args.at(flutter::EncodableValue("height")));
-  if (width >= 0 && height >= 0) {
-    // Set default window size & default minimum window size values. DPI aware.
-    minimum_width_ = static_cast<int32_t>(GetScaleFactorForWindow() * width);
-    minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() * height);
-  } else {
-    minimum_width_ = 0;
-    minimum_height_ = 0;
-  }
-}
-
 int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
   // Get the current monitor height excluding the taskbar.
   auto rect = GetMonitorRect(true);
@@ -188,6 +175,19 @@ void WindowPlusPlugin::AlignChildContent() {
     auto frame = RECT{};
     ::GetClientRect(GetWindow(), &frame);
     ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, TRUE);
+  }
+}
+
+void WindowPlusPlugin::SetMinimumSize(flutter::EncodableMap& args) {
+  auto width = std::get<double>(args.at(flutter::EncodableValue("width")));
+  auto height = std::get<double>(args.at(flutter::EncodableValue("height")));
+  if (width >= 0 && height >= 0) {
+    // Set default window size & default minimum window size values. DPI aware.
+    minimum_width_ = static_cast<int32_t>(GetScaleFactorForWindow() * width);
+    minimum_height_ = static_cast<int32_t>(GetScaleFactorForWindow() * height);
+  } else {
+    minimum_width_ = 0;
+    minimum_height_ = 0;
   }
 }
 
@@ -313,8 +313,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
         // NOTE: The top should also be reduced, which is handled in the child window.
       } else {
         // RESTORED
-        // In Windows, when window frame is drawn, the client area is actually reduced to make space for the resize border (because WM_NCHHITTEST is only received inside client area). In modern
-        // Windows (i.e. 10 or 11), this space actually looks transparent. Thus, it feels like the resize border is outside the window but it is actually not.
+        // In Windows, when window frame is drawn, the client area is actually reduced to make space for the resize border (because WM_NCHHITTEST is only received inside client area).
+        // In modern Windows (i.e. 10 or 11), this space actually looks transparent. Thus, it feels like the resize border is outside the window but it is actually not.
         // The important thing to note here is that the top border is not reduced.
         auto padding = GetDefaultWindowPadding();
         if (!IsFullscreen()) {
