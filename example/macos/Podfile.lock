@@ -2,20 +2,26 @@ PODS:
   - FlutterMacOS (1.0.0)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
+  - window_plus (0.0.1):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - window_plus (from `Flutter/ephemeral/.symlinks/plugins/window_plus/macos`)
 
 EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  window_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/window_plus/macos
 
 SPEC CHECKSUMS:
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   url_launcher_macos: 597e05b8e514239626bcf4a850fcf9ef5c856ec3
+  window_plus: df2d9cf964ef27d0aac7420ebd7bab7b8f33f5b8
 
 PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
 
