@@ -69,7 +69,7 @@ class NSWindow extends PlatformWindow {
 
   @override
   Future<bool> get maximized async {
-    throw UnimplementedError();
+    return await channel.invokeMethod(kGetIsMaximizedMethodName);
   }
 
   @override
@@ -125,12 +125,12 @@ class NSWindow extends PlatformWindow {
 
   @override
   Future<void> maximize() async {
-    throw UnimplementedError();
+    await channel.invokeMethod(kMaximizeMethodName);
   }
 
   @override
   Future<void> restore() async {
-    throw UnimplementedError();
+    await channel.invokeMethod(kRestoreMethodName);
   }
 
   @override

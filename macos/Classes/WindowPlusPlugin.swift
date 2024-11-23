@@ -14,6 +14,9 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     static let kSetIsFullscreenMethodName = "setIsFullscreen"
     static let kCloseMethodName = "close"
     static let kDestroyMethodName = "destroy"
+    static let kGetIsMaximizedMethodName = "getMaximized"
+    static let kMaximizeMethodName = "maximize"
+    static let kRestoreMethodName = "restore"
     
     static let kGetCaptionHeight = "getCaptionHeight"
     
@@ -53,11 +56,10 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         let application = NSWorkspace.shared.runningApplications
             .filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
             .first { $0.processIdentifier != getpid() }
-        let object = arguments.count <= 1 ? nil : arguments[1]
-        if let application = application {
+        if let application = application && arguments.count > 1 {
             DistributedNotificationCenter.default().post(
                 name: Notification.Name(kSingleInstanceNotificationNamePrefix + Bundle.main.bundleIdentifier!),
-                object: object,
+                object: arguments[1],
                 userInfo: nil
             )
             _ = try? NSWorkspace.shared.launchApplication(at: application.bundleURL!,
@@ -104,6 +106,18 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         case WindowPlusPlugin.kDestroyMethodName:
             destroyInvoked = true
             NSApplication.shared.terminate(self)
+            result(nil)
+        case WindowPlusPlugin.kGetIsMaximizedMethodName:
+            result(view.window?.isZoomed ?? false)
+        case WindowPlusPlugin.kMaximizeMethodName:
+            if view.window?.isZoomed == false {
+                view.window?.zoom(nil)
+            }
+            result(nil)
+        case WindowPlusPlugin.kRestoreMethodName:
+            if view.window?.isZoomed == true {
+                view.window?.zoom(nil)
+            }
             result(nil)
         case WindowPlusPlugin.kGetCaptionHeight:
             result((view.window?.contentView?.frame.height ?? 0) - (view.window?.contentLayoutRect.height ?? 0))

@@ -18,17 +18,27 @@ class WindowCaption extends StatelessWidget {
                 width: double.infinity,
                 height: WindowPlus.instance.captionHeight,
               )
-            : SizedBox(
-                width: double.infinity,
-                height: WindowPlus.instance.captionHeight,
-                child: Theme(
-                  data: Theme.of(context).copyWith(brightness: brightness),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(child: child ?? const SizedBox.shrink()),
-                    ],
+            : GestureDetector(
+                onDoubleTap: () async {
+                  if (await WindowPlus.instance.maximized) {
+                    await WindowPlus.instance.restore();
+                  } else {
+                    await WindowPlus.instance.maximize();
+                  }
+                },
+                child: Container(
+                  color: Colors.transparent,
+                  width: double.infinity,
+                  height: WindowPlus.instance.captionHeight,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(brightness: brightness),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: child ?? const SizedBox.shrink()),
+                      ],
+                    ),
                   ),
                 ),
               );
