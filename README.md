@@ -4,187 +4,37 @@
 
 As it should be. Extend view into title-bar.
 
-![0](https://user-images.githubusercontent.com/28951144/201383429-f1dd42bc-e53e-493b-b777-95024788212a.png)
-![1](https://user-images.githubusercontent.com/28951144/201383435-34fedc2e-7cd9-46f9-86f7-b3f5a2a6f985.png)
-
-<details>
-
-<summary> Windows 7 </summary>
-
-![3](https://user-images.githubusercontent.com/28951144/201383993-55c9c937-5e08-4627-843e-7ae63d382dfe.png)
-
-</details>
-
-## Features
-
-- [x] Remembering window position & state at application launch & quit.
-- [x] Frameless & customizable title-bar on Windows 10 RS1 or higher with correct resize & move hit-box.
-- [x] Excellent backward compatibility, till Windows 7 SP1.
-- [x] Fullscreen support.
-- [ ] Overlay & always on-top support.
-- [x] Programmatic maximize, restore, size, move, close & destroy.
-- [x] Subscription to window resize, move, minimize, maximize & fullscreen events.
-- [ ] Customizable minimum window size.
-- [x] Multiple monitor(s) compatibility.
-- [x] Single instance support & argument vector (`List<String> args`) forwarding.
-- [ ] Windows 11 snap layouts.
-- [x] Interception of window close event _e.g._ for code execution or clean-up before application quit.
-- [x] Well tested & stable as fuck.
-
-## Reference
-
-#### Initializing the plugin
-
-```dart
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  /// Ideally, should be present right after [WidgetsFlutterBinding.ensureInitialized] & anywhere before [runApp].
-  await WindowPlus.ensureInitialized(
-    /// Pass a unique identifier for your application.
-    application: 'com.alexmercerind.window_plus',
-    /// Optional: 
-    enableCustomFrame: true,     // true by default on Windows 10 RS1 or higher.
-    enableEventStreams: false,    // true by default.
-  );
-}
-```
-
-#### Intercepting window close event
-
-```dart
-WindowPlus.instance.setWindowCloseHandler(() async {
-  /// Show alert to the user. Likely if some operation is pending.
-  /// Perform clean-up.
-  final bool canWindowClose = await doSomethingBeforeClose();
-  return canWindowClose;
-});
-```
-
-#### Receiving single instance arguments
-
-```dart
-WindowPlus.instance.setSingleInstanceArgumentsHandler((List<String> args) {
-  print(args.toString());
-});
-```
-
-#### Entering or leaving fullscreen
-
-```dart
-WindowPlus.instance.setIsFullscreen(true);
-```
-
-#### Programmatically controlling window
-
-```dart
-
-/// Control window state.
-
-WindowPlus.instance.minimize();
-WindowPlus.instance.maximize();
-WindowPlus.instance.restore();
-
-WindowPlus.instance.move(40, 40);
-WindowPlus.instance.resize(640, 480);
-
-WindowPlus.instance.show();
-WindowPlus.instance.hide();
-
-/// Close the window.
-/// [WindowPlus.instance.setWindowCloseHandler] may be used to intercept the action.
-
-WindowPlus.instance.close();
-
-/// Closes the window without respecting the [WindowPlus.instance.setWindowCloseHandler] handler.
-
-WindowPlus.instance.destroy();
-
-/// Query.
-final bool maximized = await WindowPlus.instance.maximized;
-final bool minimized = await WindowPlus.instance.minimized;
-final bool fullscreen = await WindowPlus.instance.fullscreen;
-final Rect size = await WindowPlus.instance.size;
-final Offset position = await WindowPlus.instance.position;
-```
-
-#### Fetching available monitors
-
-```dart
-/// Get all the available monitors.
-
-final List<Monitor> monitors = await WindowPlus.instance.monitors;
-```
-
-#### Subscribing to window events
-
-```dart
-
-WindowPlus.instance.maximizedStream.listen((bool value) {
-  print(value.toString());
-});
-
-WindowPlus.instance.minimizedStream.listen((bool value) {
-  print(value.toString());
-});
-
-WindowPlus.instance.fullscreenStream.listen((bool value) {
-  print(value.toString());
-});
-
-WindowPlus.instance.sizeStream.listen((Rect size) {
-  print(size.toString());
-});
-
-WindowPlus.instance.positionStream.listen((Offset position) {
-  print(position.toString());
-});
-
-```
-
-#### Displaying custom title-bar
-
-*1. Default Windows look.*
-
-```dart
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        /// Use a [Stack] to make your app's content to "bleed through the title-bar" & give a seamless look.
-        body: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            /// Actual application content.
-            MyScreen(),
-            /// Window title-bar that follows Windows' default design.
-            /// It's height can be accessed using [WindowPlus.instance.captionHeight].
-            /// Only shows on Windows 10 or higher. On lower Windows versions, the default window frame is kept. Thus, no need for rendering second one.
-            WindowCaption(
-              /// Optionally, [brightness] may be set to make window controls white or black (as default Windows 10+ design does).
-              /// By default, this is decided by [MediaQuery].
-              brightness: Brightness.dark,
-              /// A [child] may be passed to render custom content in the title-bar.
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-```
-
-*2. Custom look.*
-
-You may compose your own window title-bar & controls. See following widgets for reference:
-- `WindowCaptionArea`
-- `WindowMinimizeButton`
-- `WindowMaximizeButton`
-- `WindowRestoreButton`
-- `WindowCloseButton`
-- `WindowRestoreMaximizeButton`
-
 ## Setup
 
 Following configuration is required.
+
+### macOS
+
+```diff
+ import Cocoa
+ import FlutterMacOS
++import window_plus
+ 
+ class MainFlutterWindow: NSWindow {
+     override func awakeFromNib() {
+        WindowPlusPlugin.handleSingleInstance()
+ 
+         let flutterViewController = FlutterViewController()
+         let windowFrame = self.frame
+         self.contentViewController = flutterViewController
+         self.setFrame(windowFrame, display: true)
+ 
+         RegisterGeneratedPlugins(registry: flutterViewController)
+ 
+         super.awakeFromNib()
+     }
+ 
++    override public func order(_ place: NSWindow.OrderingMode, relativeTo otherWin: Int) {
++        super.order(place, relativeTo: otherWin)
++        WindowPlusPlugin.hideUntilReady()
++    }
+ }
+```
 
 ### Windows
 
@@ -230,6 +80,31 @@ Edit `linux/my_application.cc` as:
 
 For enabling single instance support, follow the steps below.
 
+### macOS
+
+In `macos/Runner/MainFlutterWindow.swift`, add the following code:
+
+```diff
+ import Cocoa
+ import FlutterMacOS
++import window_plus
+ 
+ class MainFlutterWindow: NSWindow {
+     override func awakeFromNib() {
++        WindowPlusPlugin.handleSingleInstance()
+ 
+         let flutterViewController = FlutterViewController()
+         let windowFrame = self.frame
+         self.contentViewController = flutterViewController
+         self.setFrame(windowFrame, display: true)
+ 
+         RegisterGeneratedPlugins(registry: flutterViewController)
+ 
+         super.awakeFromNib()
+     }
+ }
+```
+
 ### Windows
 
 In `windows/runner/main.cpp`, add the following code:
@@ -266,30 +141,9 @@ Finally, forward the arguments to Dart / Flutter, with [`window_plus_plugin_hand
 
 ## Platforms
 
+- macOS
 - Windows
 - GNU/Linux
-
-## Why
-
-[`package:window_plus`](https://github.com/alexmercerind/window_plus) is made to leverage requirements of [Harmonoid](https://github.com/harmonoid/harmonoid).
-
-Initially, [Harmonoid](https://github.com/harmonoid/harmonoid) used [`package:bitsdojo_window`](https://github.com/bitsdojo/bitsdojo_window) for a _modern-looking window_ on Windows. However, as time went by a number of issues surfaced like:
-
-- Resize border inside client area (which made `Widget`s near window borders hard to interract e.g. scrollbar).
-- Windows 7 support.
-- Other stability & crash issues.
-
-This gave birth to [my fork of `package:bitsdojo_window`](https://github.com/alexmercerind/bitsdojo_window), where I fixed various issues I discovered. However, after mending things in a dirty manner (partially due to the fact that my style of writing code is different), the code became really spaghetti & now it's something I can no longer trust. Thus, I decided to create [`package:window_plus`](https://github.com/alexmercerind/window_plus) which is far more cleaner (follows [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)), correctly implemented & offers additional features like:
-
-- Ability to intercept window close event.
-- Remembering window position & state.
-- Fullscreen support.
-
-I also didn't want a custom frame on GNU/Linux version of [Harmonoid](https://github.com/harmonoid/harmonoid), since it's _"not the trend"_. See: Discord, Visual Studio Code or Spotify. I believe ensuring compatibility with _all_ desktop environments like KDE, XFCE, GNOME & other tiling ones is far more important. So, best is to customize the native window behavior as less as possible on GNU/Linux. On the other hand, most GNU/Linux desktop environments offer various customization options for changing window controls' style/position, window's frame/border etc. anyway. This functionality of host OS would be unusable after implementing a custom frame & rendering custom title bar with Flutter.
-
-Stability & correct implementation is the primary concern here.
-
-Now, [`package:window_plus`](https://github.com/alexmercerind/window_plus) can serve as a starting point for applications other than [Harmonoid](https://github.com/harmonoid/harmonoid).
 
 ## License
 
