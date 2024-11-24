@@ -30,16 +30,6 @@ class WindowCaption extends StatelessWidget {
                   color: Colors.transparent,
                   width: double.infinity,
                   height: WindowPlus.instance.captionHeight,
-                  child: Theme(
-                    data: Theme.of(context).copyWith(brightness: brightness),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(child: child ?? const SizedBox.shrink()),
-                      ],
-                    ),
-                  ),
                 ),
               );
       },
