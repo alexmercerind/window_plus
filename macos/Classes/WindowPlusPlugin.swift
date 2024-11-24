@@ -54,9 +54,9 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     public static func handleSingleInstance() {
         let arguments = CommandLine.arguments
         let application = NSWorkspace.shared.runningApplications
-            .filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-            .first { $0.processIdentifier != getpid() }
-        if let application = application && arguments.count > 1 {
+            .filter { application in application.bundleIdentifier == Bundle.main.bundleIdentifier }
+            .first { application in application.processIdentifier != getpid() }
+        if let application = application, arguments.count > 1 {
             DistributedNotificationCenter.default().post(
                 name: Notification.Name(kSingleInstanceNotificationNamePrefix + Bundle.main.bundleIdentifier!),
                 object: arguments[1],
