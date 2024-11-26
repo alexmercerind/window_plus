@@ -10,6 +10,8 @@ Following configuration is required.
 
 ### macOS
 
+Edit `macos/Runner/MainFlutterWindow.swift` as:
+
 ```diff
  import Cocoa
  import FlutterMacOS
