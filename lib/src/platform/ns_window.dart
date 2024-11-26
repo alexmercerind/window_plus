@@ -1,3 +1,5 @@
+import 'dart:ffi' hide Size;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -49,12 +51,6 @@ class NSWindow extends PlatformWindow {
           break;
         }
     }
-  }
-
-  @override
-  Future<void> ensureInitialized() async {
-    await super.ensureInitialized();
-    _captionHeightValue = await channel.invokeMethod(kGetCaptionHeight);
   }
 
   @override
@@ -190,7 +186,7 @@ class NSWindow extends PlatformWindow {
 
   @override
   double get captionHeight {
-    return _captionHeightValue;
+    return getCaptionHeight();
   }
 
   @override
@@ -198,5 +194,8 @@ class NSWindow extends PlatformWindow {
     return Size.zero;
   }
 
-  double _captionHeightValue = 0.0;
+  final GetCaptionHeightDart getCaptionHeight = DynamicLibrary.process().lookupFunction<Float Function(), double Function()>('getCaptionHeight');
 }
+
+typedef GetCaptionHeightNative = Float Function();
+typedef GetCaptionHeightDart = double Function();

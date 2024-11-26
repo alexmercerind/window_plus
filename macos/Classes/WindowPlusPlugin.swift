@@ -20,6 +20,8 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     
     static let kGetCaptionHeight = "getCaptionHeight"
     
+    // HACK: Save NSView as static variable to access in C linking.
+    static var view: NSView?
     static var hideUntilReadyInvoked = false
     
     var channel: FlutterMethodChannel
@@ -28,6 +30,8 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     var destroyInvoked = false
     
     init(channel: FlutterMethodChannel, view: NSView) {
+        WindowPlusPlugin.view = view
+        
         self.channel = channel
         self.view = view
         super.init()
@@ -136,3 +140,13 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         return destroyInvoked ? .terminateNow : .terminateCancel
     }
 }
+
+// --------------------------------------------------
+
+@_cdecl("getCaptionHeight")
+public func getCaptionHeight() -> Float {
+    let view = WindowPlusPlugin.view
+    return Float((view?.window?.contentView?.frame.height ?? 0) - (view?.window?.contentLayoutRect.height ?? 0))
+}
+
+// --------------------------------------------------
