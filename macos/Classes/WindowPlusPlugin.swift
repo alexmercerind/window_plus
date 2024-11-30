@@ -26,6 +26,7 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     
     var channel: FlutterMethodChannel
     var view: NSView
+    var urls: [String]?
     
     var destroyInvoked = false
     
@@ -39,12 +40,11 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         NSApplication.shared.delegate = self
         view.window?.delegate = self
         
-        DistributedNotificationCenter.default().addObserver(
-            forName: Notification.Name(WindowPlusPlugin.kSingleInstanceNotificationNamePrefix + Bundle.main.bundleIdentifier!),
-            object: nil,
-            queue: nil
-        ) { notification in
-            self.channel.invokeMethod(WindowPlusPlugin.kSingleInstanceDataReceivedMethodName, arguments: [notification.object])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.channel.invokeMethod(
+                WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+                arguments: self.urls
+            )
         }
     }
     
@@ -52,24 +52,6 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         if !hideUntilReadyInvoked {
             hideUntilReadyInvoked = true
             NSApplication.shared.windows.forEach { $0.setIsVisible(false) }
-        }
-    }
-    
-    public static func handleSingleInstance() {
-        let arguments = CommandLine.arguments
-        let application = NSWorkspace.shared.runningApplications
-            .filter { application in application.bundleIdentifier == Bundle.main.bundleIdentifier }
-            .first { application in application.processIdentifier != getpid() }
-        if let application = application, arguments.count > 1 {
-            DistributedNotificationCenter.default().post(
-                name: Notification.Name(kSingleInstanceNotificationNamePrefix + Bundle.main.bundleIdentifier!),
-                object: arguments[1],
-                userInfo: nil
-            )
-            _ = try? NSWorkspace.shared.launchApplication(at: application.bundleURL!,
-                                                          options: .default,
-                                                          configuration: [:])
-            NSApplication.shared.terminate(self)
         }
     }
     
@@ -128,6 +110,14 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         default:
             result(FlutterMethodNotImplemented)
         }
+    }
+    
+    public func application(_ application: NSApplication, open urls: [URL]) {
+        self.urls = urls.map { url in url.absoluteString }
+        self.channel.invokeMethod(
+            WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+            arguments: self.urls
+        )
     }
     
     public func windowShouldClose(_ sender: NSWindow) -> Bool {

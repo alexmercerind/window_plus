@@ -84,28 +84,7 @@ For enabling single instance support, follow the steps below.
 
 ### macOS
 
-In `macos/Runner/MainFlutterWindow.swift`, add the following code:
-
-```diff
- import Cocoa
- import FlutterMacOS
-+import window_plus
- 
- class MainFlutterWindow: NSWindow {
-     override func awakeFromNib() {
-+        WindowPlusPlugin.handleSingleInstance()
- 
-         let flutterViewController = FlutterViewController()
-         let windowFrame = self.frame
-         self.contentViewController = flutterViewController
-         self.setFrame(windowFrame, display: true)
- 
-         RegisterGeneratedPlugins(registry: flutterViewController)
- 
-         super.awakeFromNib()
-     }
- }
-```
+No changes required.
 
 ### Windows
 
