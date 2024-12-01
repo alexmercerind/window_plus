@@ -40,11 +40,14 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         NSApplication.shared.delegate = self
         view.window?.delegate = self
         
+        // There's a race condition... add a bit of delay.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.channel.invokeMethod(
-                WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
-                arguments: self.urls
-            )
+            if self.urls != nil {
+                self.channel.invokeMethod(
+                    WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+                    arguments: self.urls
+                )
+            }
         }
     }
     
@@ -69,6 +72,7 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
             result(Int(bitPattern: Unmanaged.passUnretained(view.window!).toOpaque()))
         case WindowPlusPlugin.kNotifyFirstFrameRasterizedMethodName:
             view.window?.setIsVisible(true)
+            view.window?.makeKeyAndOrderFront(self)
             NSApplication.shared.activate(ignoringOtherApps: true)
             result(nil)
         case WindowPlusPlugin.kGetIsFullscreenMethodName:
@@ -118,6 +122,8 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
             WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
             arguments: self.urls
         )
+        view.window?.makeKeyAndOrderFront(self)
+        NSApplication.shared.activate(ignoringOtherApps: true)
     }
     
     public func windowShouldClose(_ sender: NSWindow) -> Bool {
