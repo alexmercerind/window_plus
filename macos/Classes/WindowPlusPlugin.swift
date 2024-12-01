@@ -39,16 +39,6 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         
         NSApplication.shared.delegate = self
         view.window?.delegate = self
-        
-        // There's a race condition... add a bit of delay.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            if self.urls != nil {
-                self.channel.invokeMethod(
-                    WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
-                    arguments: self.urls
-                )
-            }
-        }
     }
     
     public static func hideUntilReady() {
@@ -74,6 +64,16 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
             view.window?.setIsVisible(true)
             view.window?.makeKeyAndOrderFront(self)
             NSApplication.shared.activate(ignoringOtherApps: true)
+            
+            DispatchQueue.main.async {
+                if self.urls != nil {
+                    self.channel.invokeMethod(
+                        WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+                        arguments: self.urls
+                    )
+                }
+            }
+            
             result(nil)
         case WindowPlusPlugin.kGetIsFullscreenMethodName:
             result(view.window?.styleMask.contains(.fullScreen) ?? false)
