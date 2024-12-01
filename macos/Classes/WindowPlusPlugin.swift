@@ -103,14 +103,11 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
         case WindowPlusPlugin.kGetCaptionHeight:
             result((view.window?.contentView?.frame.height ?? 0) - (view.window?.contentLayoutRect.height ?? 0))
         case WindowPlusPlugin.kNotifyUrls:
-            // There's a race condition... add a bit of delay.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                if self.urls != nil {
-                    self.channel.invokeMethod(
-                        WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
-                        arguments: self.urls
-                    )
-                }
+            if self.urls != nil {
+                self.channel.invokeMethod(
+                    WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+                    arguments: self.urls
+                )
             }
             result(nil)
         default:
