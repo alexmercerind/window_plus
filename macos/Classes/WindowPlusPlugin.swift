@@ -19,6 +19,7 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
     static let kRestoreMethodName = "restore"
     
     static let kGetCaptionHeight = "getCaptionHeight"
+    static let kNotifyUrls = "notifyUrls"
     
     // HACK: Save NSView as static variable to access in C linking.
     static var view: NSView?
@@ -64,16 +65,6 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
             view.window?.setIsVisible(true)
             view.window?.makeKeyAndOrderFront(self)
             NSApplication.shared.activate(ignoringOtherApps: true)
-            
-            DispatchQueue.main.async {
-                if self.urls != nil {
-                    self.channel.invokeMethod(
-                        WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
-                        arguments: self.urls
-                    )
-                }
-            }
-            
             result(nil)
         case WindowPlusPlugin.kGetIsFullscreenMethodName:
             result(view.window?.styleMask.contains(.fullScreen) ?? false)
@@ -111,6 +102,17 @@ public class WindowPlusPlugin: NSObject, FlutterPlugin, NSApplicationDelegate, N
             result(nil)
         case WindowPlusPlugin.kGetCaptionHeight:
             result((view.window?.contentView?.frame.height ?? 0) - (view.window?.contentLayoutRect.height ?? 0))
+        case WindowPlusPlugin.kNotifyUrls:
+            // There's a race condition... add a bit of delay.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                if self.urls != nil {
+                    self.channel.invokeMethod(
+                        WindowPlusPlugin.kSingleInstanceDataReceivedMethodName,
+                        arguments: self.urls
+                    )
+                }
+            }
+            result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
