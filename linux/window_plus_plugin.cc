@@ -8,7 +8,6 @@
 #include <gtk/gtk.h>
 
 #include <iostream>
-#include <thread>
 
 // TODO(alexmercerind): Refactor to use GObject.
 
@@ -338,7 +337,7 @@ static void window_plus_plugin_handle_method_call(WindowPlusPlugin* self, FlMeth
   } else if (strcmp(method, kDestroyMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
     GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(view));
-    std::thread([=]() { g_signal_emit_by_name(G_OBJECT(window), "destroy"); }).detach();
+    g_application_quit(G_APPLICATION(gtk_window_get_application(window)));
     response = FL_METHOD_RESPONSE(fl_method_success_response_new(fl_value_new_null()));
   } else if (strcmp(method, kGetIsMinimizedMethodName) == 0) {
     GtkWidget* view = GTK_WIDGET(fl_plugin_registrar_get_view(self->registrar));
