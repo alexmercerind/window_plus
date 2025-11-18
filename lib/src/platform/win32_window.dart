@@ -184,7 +184,7 @@ class Win32Window extends PlatformWindow {
         await maximized,
       );
       GetMonitorInfo(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), monitor);
-      SetWindowLongPtr(handle, GWL_STYLE, style & WS_OVERLAPPEDWINDOW);
+      SetWindowLongPtr(handle, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
       SetWindowPos(
         handle,
         HWND_TOP,
