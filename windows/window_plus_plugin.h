@@ -39,7 +39,7 @@ class WindowPlusPlugin : public flutter::Plugin {
 
   HWND GetWindow();
 
-  RECT GetMonitorRect(bool use_cursor);
+  RECT GetMonitorRect(RECT* rect = nullptr);
 
   std::vector<HMONITOR> GetMonitors();
 

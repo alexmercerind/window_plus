@@ -302,7 +302,7 @@ class Win32Window extends PlatformWindow {
     while (next != handle) {
       if (IsWindowVisible(next) == TRUE) {
         final cloaked = calloc<Int>();
-        final attr = DwmGetWindowAttribute(next, DWMWA_CLOAKED, cloaked, sizeOf<Int>());
+        final attr = DwmGetWindowAttribute(next, DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, cloaked, sizeOf<Int>());
         if (attr != S_OK) {
           cloaked.value = 0;
         }

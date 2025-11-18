@@ -29,16 +29,16 @@ WindowPlusPlugin::~WindowPlusPlugin() {
 
 HWND WindowPlusPlugin::GetWindow() { return ::GetAncestor(registrar_->GetView()->GetNativeWindow(), GA_ROOT); }
 
-RECT WindowPlusPlugin::GetMonitorRect(bool use_cursor) {
+RECT WindowPlusPlugin::GetMonitorRect(RECT* rect) {
   auto info = MONITORINFO{};
   info.cbSize = DWORD(sizeof(MONITORINFO));
   HMONITOR monitor = nullptr;
-  if (use_cursor) {
+  if (!rect) {
     POINT cursor;
     ::GetCursorPos(&cursor);
     monitor = ::MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
   } else {
-    monitor = ::MonitorFromWindow(GetWindow(), MONITOR_DEFAULTTONEAREST);
+    monitor = ::MonitorFromRect(rect, MONITOR_DEFAULTTONEAREST);
   }
   ::GetMonitorInfo(monitor, static_cast<LPMONITORINFO>(&info));
   return info.rcWork;
@@ -131,7 +131,7 @@ POINT WindowPlusPlugin::GetDefaultWindowPadding() {
 
 int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
   // Get the current monitor width excluding the taskbar.
-  auto rect = GetMonitorRect(true);
+  auto rect = GetMonitorRect();
   rect.right -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   rect.bottom -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   auto monitor_width = static_cast<int32_t>(rect.right - rect.left);
@@ -146,7 +146,7 @@ int32_t WindowPlusPlugin::GetDefaultWindowWidth() {
 
 int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
   // Get the current monitor height excluding the taskbar.
-  auto rect = GetMonitorRect(true);
+  auto rect = GetMonitorRect();
   rect.right -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   rect.bottom -= static_cast<int32_t>(48 * GetScaleFactorForWindow());
   auto monitor_height = static_cast<int32_t>(rect.bottom - rect.top);
@@ -305,7 +305,7 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
       if (::IsZoomed(GetWindow())) {
         // MAXIMIZED
         // Adjust the window client area, so that content doesn't appear cropped out of the screen, when the window is maximized.
-        auto monitor_rect = GetMonitorRect(false);
+        auto monitor_rect = GetMonitorRect(&params->rgrc[0]);
         params->rgrc[0].left = monitor_rect.left;
         params->rgrc[0].right = monitor_rect.right;
         // Get rid of that 1 pixel top border. It makes caption buttons hard to click.
@@ -590,7 +590,7 @@ void WindowPlusPlugin::HandleMethodCall(const flutter::MethodCall<flutter::Encod
         if (is_within_monitor) {
           ::SetWindowPos(GetWindow(), nullptr, x, y, width, height, 0);
         } else {
-          auto monitor = GetMonitorRect(true);
+          auto monitor = GetMonitorRect();
           // If |width| or |height| exceeds the monitor size, then use the |default_width_| & |default_height_|.
           width = width > (monitor.right - monitor.left) ? default_width_ : width;
           height = height > (monitor.bottom - monitor.top) ? default_height_ : height;
@@ -598,14 +598,14 @@ void WindowPlusPlugin::HandleMethodCall(const flutter::MethodCall<flutter::Encod
         }
       } else {
         // No saved window state, so restore the window to the center of the |monitor| where the cursor is present.
-        auto monitor = GetMonitorRect(true);
+        auto monitor = GetMonitorRect();
         ::SetWindowPos(GetWindow(), nullptr, monitor.left + (monitor.right - monitor.left) / 2 - default_width_ / 2, monitor.top + (monitor.bottom - monitor.top) / 2 - default_height_ / 2,
                        default_width_, default_height_, 0);
       }
     } catch (...) {
       // Typically, an instance of |std::bad_variant_access| will be received.
       // No saved window state, so restore the window to the center of the |monitor| where the cursor is present.
-      auto monitor = GetMonitorRect(true);
+      auto monitor = GetMonitorRect();
       ::SetWindowPos(GetWindow(), nullptr, monitor.left + (monitor.right - monitor.left) / 2 - default_width_ / 2, monitor.top + (monitor.bottom - monitor.top) / 2 - default_height_ / 2,
                      default_width_, default_height_, 0);
     }
