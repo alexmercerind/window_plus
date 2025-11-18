@@ -107,13 +107,13 @@ class _MyAppState extends State<MyApp> {
                                 Icon(
                                   Icons.window_outlined,
                                   size: 256.0,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                 ),
                                 const SizedBox(width: 32.0),
                                 Icon(
                                   Icons.desktop_windows_outlined,
                                   size: 256.0,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                 ),
                               ],
                             ),
