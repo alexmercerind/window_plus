@@ -160,22 +160,11 @@ int32_t WindowPlusPlugin::GetDefaultWindowHeight() {
 }
 
 void WindowPlusPlugin::AlignChildContent() {
-  if (enable_custom_frame_) {
-    auto frame = RECT{};
-    ::GetClientRect(GetWindow(), &frame);
-    if (::IsZoomed(GetWindow()) && !IsFullscreen()) {
-      // Make some room at the top, to prevent the abrupt shift of the content upon fresh launch in maximized state.
-      auto padding = GetDefaultWindowPadding();
-      frame.top += padding.y;
-      frame.bottom -= padding.y;
-    }
-    ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, TRUE);
-  } else {
-    // No need to do this, if the custom frame is disabled.
-    auto frame = RECT{};
-    ::GetClientRect(GetWindow(), &frame);
-    ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, TRUE);
-  }
+  auto frame = RECT{};
+  ::GetClientRect(GetWindow(), &frame);
+  // GetClientRect returns the client area which has already been adjusted by WM_NCCALCSIZE.
+  // So we can use it directly without further adjustments.
+  ::MoveWindow(registrar_->GetView()->GetNativeWindow(), frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, TRUE);
 }
 
 void WindowPlusPlugin::SetMinimumSize(flutter::EncodableMap& args) {
@@ -301,26 +290,30 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
         return 0;
       }
       auto params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+      auto requested_client_rect = &params->rgrc[0];
 
-      if (::IsZoomed(GetWindow())) {
-        // MAXIMIZED
-        // Adjust the window client area, so that content doesn't appear cropped out of the screen, when the window is maximized.
-        auto monitor_rect = GetMonitorRect(&params->rgrc[0]);
-        params->rgrc[0].left = monitor_rect.left;
-        params->rgrc[0].right = monitor_rect.right;
-        // Get rid of that 1 pixel top border. It makes caption buttons hard to click.
-        params->rgrc[0].top -= 1;
-        // NOTE: The top should also be reduced, which is handled in the child window.
-      } else {
-        // RESTORED
-        // In Windows, when window frame is drawn, the client area is actually reduced to make space for the resize border (because WM_NCHHITTEST is only received inside client area).
-        // In modern Windows (i.e. 10 or 11), this space actually looks transparent. Thus, it feels like the resize border is outside the window but it is actually not.
-        // The important thing to note here is that the top border is not reduced.
-        auto padding = GetDefaultWindowPadding();
-        if (!IsFullscreen()) {
-          params->rgrc[0].left += padding.x;
-          params->rgrc[0].right -= padding.x;
-          params->rgrc[0].bottom -= padding.y;
+      if (!IsFullscreen()) {
+        // GetSystemMetricsForWindow already handles DPI awareness.
+        int frame_x = GetSystemMetricsForWindow(SM_CXFRAME);
+        int frame_y = GetSystemMetricsForWindow(SM_CYFRAME);
+        int padding = GetSystemMetricsForWindow(SM_CXPADDEDBORDER);
+
+        if (::IsZoomed(GetWindow())) {
+          // MAXIMIZED
+          // Adjust the window client area, so that content doesn't appear cropped out of the screen, when the window is maximized.
+          auto monitor_rect = GetMonitorRect(requested_client_rect);
+          requested_client_rect->left = monitor_rect.left;
+          requested_client_rect->right = monitor_rect.right;
+          requested_client_rect->bottom -= frame_y + padding;
+          requested_client_rect->top += frame_y + padding;
+          // Get rid of that 1 pixel top border. It makes caption buttons hard to click.
+          requested_client_rect->top -= 1;
+        } else {
+          // RESTORED
+          // In Windows, when window frame is drawn, the client area is actually reduced to make space for the resize border.
+          requested_client_rect->right -= frame_x + padding;
+          requested_client_rect->left += frame_x + padding;
+          requested_client_rect->bottom -= frame_y + padding;
         }
       }
 
