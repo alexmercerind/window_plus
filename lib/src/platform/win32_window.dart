@@ -226,14 +226,13 @@ class Win32Window extends PlatformWindow {
         final flutterWindowClassName = kWin32FlutterViewWindowClass.toNativeUtf16();
         final flutterWindowHwnd = FindWindowEx(handle, 0, flutterWindowClassName, nullptr);
         GetClientRect(handle, rect);
-        final shift = enableCustomFrame ? (_getSystemMetrics(SM_CYFRAME) + _getSystemMetrics(SM_CXPADDEDBORDER)) * _devicePixelRatio ~/ 1 : 0;
         SetWindowPos(
           flutterWindowHwnd,
           NULL,
           rect.ref.left,
-          rect.ref.top + shift,
+          rect.ref.top,
           rect.ref.right - rect.ref.left,
-          rect.ref.bottom - rect.ref.top - (await maximized && !await fullscreen ? 2 : 1) * shift,
+          rect.ref.bottom - rect.ref.top,
           SWP_FRAMECHANGED,
         );
         calloc.free(rect);
