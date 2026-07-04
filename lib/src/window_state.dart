@@ -23,16 +23,19 @@ class WindowState {
     channel.setMethodCallHandler(methodCallHandler);
   }
 
+  HWND get hwnd => HWND(Pointer.fromAddress(handle));
+
   Future<void> ensureInitialized() async {
     try {
-      handle = await channel.invokeMethod(
-        kEnsureInitializedMethodName,
-        {
-          'enableCustomFrame': enableCustomFrame,
-          'enableEventStreams': enableEventStreams,
-          'savedWindowState': (await savedWindowState)?.toJson(),
-        },
-      );
+      handle = await channel.invokeMethod<int>(
+            kEnsureInitializedMethodName,
+            {
+              'enableCustomFrame': enableCustomFrame,
+              'enableEventStreams': enableEventStreams,
+              'savedWindowState': (await savedWindowState)?.toJson(),
+            },
+          ) ??
+          0;
     } catch (_) {}
 
     WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
@@ -58,11 +61,11 @@ class WindowState {
     if (Platform.isMacOS) {
       // NO/OP
     } else if (Platform.isWindows) {
-      if (IsIconic(handle) == 0) {
-        final maximized = IsZoomed(handle) != 0;
+      if (!IsIconic(hwnd)) {
+        final maximized = IsZoomed(hwnd);
         final windowPlacement = calloc<WINDOWPLACEMENT>();
         windowPlacement.ref.length = sizeOf<WINDOWPLACEMENT>();
-        GetWindowPlacement(handle, windowPlacement);
+        GetWindowPlacement(hwnd, windowPlacement);
         final result = SavedWindowState(
           windowPlacement.ref.rcNormalPosition.left,
           windowPlacement.ref.rcNormalPosition.top,
@@ -102,19 +105,16 @@ class WindowState {
     if (Platform.isMacOS) {
       // NO/OP
     } else if (Platform.isWindows) {
-      final rfid = GUIDFromString(FOLDERID_RoamingAppData);
-      final result = calloc<PWSTR>();
+      final rfid = FOLDERID_RoamingAppData.toNative(allocator: calloc);
+      PWSTR? result;
       try {
-        final hr = SHGetKnownFolderPath(rfid, KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, NULL, result);
-        if (FAILED(hr)) {
-          throw WindowsException(hr);
-        }
-        return join(normalize(result.value.toDartString()), application, 'WindowState.JSON');
+        result = SHGetKnownFolderPath(rfid, KF_FLAG_DEFAULT, null);
+        return join(normalize(result.toDartString()), application, 'WindowState.JSON');
       } catch (_) {
         return join(Platform.environment['USERPROFILE']!, 'AppData', 'Roaming', application, 'WindowState.JSON');
       } finally {
         calloc.free(rfid);
-        calloc.free(result);
+        CoTaskMemFree(result);
       }
     } else if (Platform.isLinux) {
       return join(Platform.environment['HOME']!, '.config', application, 'WindowState.JSON');

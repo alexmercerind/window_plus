@@ -100,19 +100,19 @@ class Win32Window extends PlatformWindow {
   @override
   Future<bool> get activated async {
     ensureHandleAvailable();
-    return GetForegroundWindow() == handle;
+    return GetForegroundWindow() == hwnd;
   }
 
   @override
   Future<bool> get minimized async {
     ensureHandleAvailable();
-    return IsIconic(handle) != 0;
+    return IsIconic(hwnd);
   }
 
   @override
   Future<bool> get maximized async {
     ensureHandleAvailable();
-    return IsZoomed(handle) != 0;
+    return IsZoomed(hwnd);
   }
 
   @override
@@ -130,14 +130,14 @@ class Win32Window extends PlatformWindow {
   @override
   Future<bool> get fullscreen async {
     ensureHandleAvailable();
-    final style = GetWindowLongPtr(handle, GWL_STYLE);
+    final style = GetWindowLongPtr(hwnd, GWL_STYLE).value;
     return !(style & WS_OVERLAPPEDWINDOW > 0);
   }
 
   @override
   Future<bool> get alwaysOnTop async {
     ensureHandleAvailable();
-    final style = GetWindowLongPtr(handle, GWL_EXSTYLE);
+    final style = GetWindowLongPtr(hwnd, GWL_EXSTYLE).value;
     return (style & WS_EX_TOPMOST) > 0;
   }
 
@@ -145,7 +145,7 @@ class Win32Window extends PlatformWindow {
   Future<Offset> get position async {
     ensureHandleAvailable();
     final rect = calloc<RECT>();
-    GetWindowRect(handle, rect);
+    GetWindowRect(hwnd, rect);
     final result = Offset(rect.ref.left.toDouble(), rect.ref.top.toDouble());
     calloc.free(rect);
     return result;
@@ -155,7 +155,7 @@ class Win32Window extends PlatformWindow {
   Future<Rect> get size async {
     ensureHandleAvailable();
     final rect = calloc<RECT>();
-    GetWindowRect(handle, rect);
+    GetWindowRect(hwnd, rect);
     final result = Rect.fromLTRB(
       0,
       0,
@@ -169,13 +169,13 @@ class Win32Window extends PlatformWindow {
   @override
   Future<void> setIsFullscreen(bool enabled) async {
     ensureHandleAvailable();
-    final style = GetWindowLongPtr(handle, GWL_STYLE);
+    final style = GetWindowLongPtr(hwnd, GWL_STYLE).value;
     if (enabled && style & WS_OVERLAPPEDWINDOW > 0) {
       final windowPlacement = calloc<WINDOWPLACEMENT>();
       final monitor = calloc<MONITORINFO>();
       windowPlacement.ref.length = sizeOf<WINDOWPLACEMENT>();
       monitor.ref.cbSize = sizeOf<MONITORINFO>();
-      GetWindowPlacement(handle, windowPlacement);
+      GetWindowPlacement(hwnd, windowPlacement);
       _savedWindowStateBeforeFullscreen = SavedWindowState(
         windowPlacement.ref.rcNormalPosition.left,
         windowPlacement.ref.rcNormalPosition.top,
@@ -183,10 +183,10 @@ class Win32Window extends PlatformWindow {
         windowPlacement.ref.rcNormalPosition.bottom - windowPlacement.ref.rcNormalPosition.top,
         await maximized,
       );
-      GetMonitorInfo(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), monitor);
-      SetWindowLongPtr(handle, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+      GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), monitor);
+      SetWindowLongPtr(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
       SetWindowPos(
-        handle,
+        hwnd,
         HWND_TOP,
         monitor.ref.rcMonitor.left,
         monitor.ref.rcMonitor.top,
@@ -198,14 +198,14 @@ class Win32Window extends PlatformWindow {
       calloc.free(monitor);
     } else if (!enabled) {
       SetWindowLongPtr(
-        handle,
+        hwnd,
         GWL_STYLE,
         style | WS_OVERLAPPEDWINDOW,
       );
-      if (IsZoomed(handle) == 0) {
+      if (!IsZoomed(hwnd)) {
         SetWindowPos(
-          handle,
-          NULL,
+          hwnd,
+          null,
           _savedWindowStateBeforeFullscreen.x,
           _savedWindowStateBeforeFullscreen.y,
           _savedWindowStateBeforeFullscreen.width,
@@ -214,8 +214,8 @@ class Win32Window extends PlatformWindow {
         );
       } else {
         SetWindowPos(
-          handle,
-          NULL,
+          hwnd,
+          null,
           0,
           0,
           0,
@@ -223,12 +223,12 @@ class Win32Window extends PlatformWindow {
           SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED,
         );
         final rect = calloc<RECT>();
-        final flutterWindowClassName = kWin32FlutterViewWindowClass.toNativeUtf16();
-        final flutterWindowHwnd = FindWindowEx(handle, 0, flutterWindowClassName, nullptr);
-        GetClientRect(handle, rect);
+        final flutterWindowClassName = kWin32FlutterViewWindowClass.toPcwstr();
+        final flutterWindowHwnd = FindWindowEx(hwnd, null, flutterWindowClassName, null).value;
+        GetClientRect(hwnd, rect);
         SetWindowPos(
           flutterWindowHwnd,
-          NULL,
+          null,
           rect.ref.left,
           rect.ref.top,
           rect.ref.right - rect.ref.left,
@@ -263,12 +263,12 @@ class Win32Window extends PlatformWindow {
     ensureHandleAvailable();
     final order = enabled ? HWND_TOPMOST : HWND_NOTOPMOST;
     SetWindowPos(
-      handle,
+      hwnd,
       order,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
+      0,
+      0,
+      0,
+      0,
       SWP_NOMOVE | SWP_NOSIZE,
     );
   }
@@ -276,13 +276,13 @@ class Win32Window extends PlatformWindow {
   @override
   Future<void> maximize() async {
     ensureHandleAvailable();
-    PostMessage(handle, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+    PostMessage(hwnd, WM_SYSCOMMAND, const WPARAM(SC_MAXIMIZE), const LPARAM(0));
   }
 
   @override
   Future<void> restore() async {
     ensureHandleAvailable();
-    PostMessage(handle, WM_SYSCOMMAND, SC_RESTORE, 0);
+    PostMessage(hwnd, WM_SYSCOMMAND, const WPARAM(SC_RESTORE), const LPARAM(0));
   }
 
   @override
@@ -291,18 +291,19 @@ class Win32Window extends PlatformWindow {
     if (await minimized) {
       await restore();
     }
-    SetForegroundWindow(handle);
+    SetForegroundWindow(hwnd);
   }
 
   @override
   Future<void> deactivate() async {
     ensureHandleAvailable();
-    int next = GetWindow(handle, GW_HWNDNEXT);
-    while (next != handle) {
-      if (IsWindowVisible(next) == TRUE) {
+    HWND next = GetWindow(hwnd, GW_HWNDNEXT).value;
+    while (next != hwnd) {
+      if (IsWindowVisible(next)) {
         final cloaked = calloc<Int>();
-        final attr = DwmGetWindowAttribute(next, DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, cloaked, sizeOf<Int>());
-        if (attr != S_OK) {
+        try {
+          DwmGetWindowAttribute(next, DWMWA_CLOAKED, cloaked, sizeOf<Int>());
+        } on WindowsException {
           cloaked.value = 0;
         }
         if (cloaked.value == 0) {
@@ -312,7 +313,7 @@ class Win32Window extends PlatformWindow {
         }
         free(cloaked);
       }
-      next = GetWindow(next, GW_HWNDNEXT);
+      next = GetWindow(next, GW_HWNDNEXT).value;
     }
     SetForegroundWindow(GetDesktopWindow());
   }
@@ -320,27 +321,27 @@ class Win32Window extends PlatformWindow {
   @override
   Future<void> minimize() async {
     ensureHandleAvailable();
-    PostMessage(handle, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+    PostMessage(hwnd, WM_SYSCOMMAND, const WPARAM(SC_MINIMIZE), const LPARAM(0));
   }
 
   @override
   Future<void> close() async {
     ensureHandleAvailable();
-    PostMessage(handle, WM_CLOSE, 0, 0);
+    PostMessage(hwnd, WM_CLOSE, const WPARAM(0), const LPARAM(0));
   }
 
   @override
   Future<void> destroy() async {
     ensureHandleAvailable();
-    PostMessage(handle, WM_NOTIFYDESTROY, 0, 0);
+    PostMessage(hwnd, WM_NOTIFYDESTROY, const WPARAM(0), const LPARAM(0));
   }
 
   @override
   Future<void> move(int x, int y) async {
     ensureHandleAvailable();
     SetWindowPos(
-      handle,
-      NULL,
+      hwnd,
+      null,
       x,
       y,
       0,
@@ -353,8 +354,8 @@ class Win32Window extends PlatformWindow {
   Future<void> resize(int width, int height) async {
     ensureHandleAvailable();
     SetWindowPos(
-      handle,
-      NULL,
+      hwnd,
+      null,
       0,
       0,
       width,
@@ -366,13 +367,13 @@ class Win32Window extends PlatformWindow {
   @override
   Future<void> hide() async {
     ensureHandleAvailable();
-    ShowWindow(handle, SW_HIDE);
+    ShowWindow(hwnd, SW_HIDE);
   }
 
   @override
   Future<void> show() async {
     ensureHandleAvailable();
-    ShowWindow(handle, SW_SHOW);
+    ShowWindow(hwnd, SW_SHOW);
   }
 
   @override
@@ -383,10 +384,10 @@ class Win32Window extends PlatformWindow {
     data.ref.monitors = monitors;
     final result = <Monitor>[];
     EnumDisplayMonitors(
-      0,
+      null,
       nullptr,
       Pointer.fromFunction<MONITORENUMPROC>(_enumDisplayMonitorsProc, TRUE),
-      data.address,
+      LPARAM(data.address),
     );
     for (int i = 0; i < data.ref.count; i++) {
       final monitor = data.ref.monitors + i;
@@ -438,13 +439,13 @@ class Win32Window extends PlatformWindow {
     return Size.zero;
   }
 
-  double _getSystemMetrics(int index) {
+  double _getSystemMetrics(SYSTEM_METRICS_INDEX index) {
     ensureHandleAvailable();
     if (enableCustomFrame) {
       try {
         if (WindowsInfo.instance.isWindows10RS1OrGreater) {
-          final dpi = GetDpiForWindow(handle);
-          return GetSystemMetricsForDpi(index, dpi) / _devicePixelRatio;
+          final dpi = GetDpiForWindow(hwnd);
+          return GetSystemMetricsForDpi(index, dpi).value / _devicePixelRatio;
         }
         return GetSystemMetrics(index) / _devicePixelRatio;
       } catch (exception, stacktrace) {
@@ -460,11 +461,11 @@ class Win32Window extends PlatformWindow {
   double get _devicePixelRatio {
     ensureHandleAvailable();
     if (WindowsInfo.instance.isWindows10RS1OrGreater) {
-      return GetDpiForWindow(handle) / 96.0;
+      return GetDpiForWindow(hwnd) / 96.0;
     }
-    final hdc = GetDC(handle);
+    final hdc = GetDC(hwnd);
     final x = GetDeviceCaps(hdc, LOGPIXELSX);
-    ReleaseDC(handle, hdc);
+    ReleaseDC(hwnd, hdc);
     return x / 96.0;
   }
 
@@ -499,14 +500,14 @@ class _Monitor extends Struct {
 }
 
 int _enumDisplayMonitorsProc(
-  int monitor,
-  int hdc,
-  Pointer<NativeType> lprect,
+  Pointer monitor,
+  Pointer hdc,
+  Pointer<RECT> lprect,
   int lparam,
 ) {
   final info = calloc<MONITORINFO>();
   info.ref.cbSize = sizeOf<MONITORINFO>();
-  GetMonitorInfo(monitor, info);
+  GetMonitorInfo(HMONITOR(monitor), info);
   final data = Pointer<_MonitorsUserData>.fromAddress(lparam);
   final current = data.ref.monitors + data.ref.count;
   current.ref.left = info.ref.rcMonitor.left;

@@ -14,11 +14,11 @@ class WindowCaptionArea extends StatelessWidget {
   final double? height;
 
   WindowCaptionArea({
-    Key? key,
+    super.key,
     this.child,
     this.width,
     this.height,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +27,15 @@ class WindowCaptionArea extends StatelessWidget {
       onPanStart: (e) {
         assert(WindowPlus.instance.handle > 0);
         PostMessage(
-          WindowPlus.instance.handle,
+          WindowPlus.instance.hwnd,
           WM_CAPTIONAREA,
-          0,
-          0,
+          const WPARAM(0),
+          const LPARAM(0),
         );
       },
       onDoubleTap: () {
         assert(WindowPlus.instance.handle > 0);
-        if (IsZoomed(WindowPlus.instance.handle) != 0) {
+        if (IsZoomed(WindowPlus.instance.hwnd)) {
           WindowPlus.instance.restore();
         } else {
           WindowPlus.instance.maximize();
@@ -60,14 +60,14 @@ class WindowButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   WindowButton({
-    Key? key,
+    super.key,
     required this.colors,
     this.builder,
     this.iconBuilder,
     this.padding,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   Color getBackgroundColor(MouseState state) {
     if (state.isMouseDown) return colors.mouseDown;
@@ -122,11 +122,11 @@ class WindowMinimizeButton extends StatelessWidget {
   final bool animate;
 
   WindowMinimizeButton({
-    Key? key,
+    super.key,
     this.colors,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -157,11 +157,11 @@ class WindowMaximizeButton extends StatelessWidget {
   final bool animate;
 
   const WindowMaximizeButton({
-    Key? key,
+    super.key,
     this.colors,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -192,11 +192,11 @@ class WindowRestoreButton extends StatelessWidget {
   final bool animate;
 
   const WindowRestoreButton({
-    Key? key,
+    super.key,
     this.colors,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -227,11 +227,11 @@ class WindowCloseButton extends StatelessWidget {
   final bool animate;
 
   WindowCloseButton({
-    Key? key,
+    super.key,
     this.colors,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -262,15 +262,15 @@ class WindowRestoreMaximizeButton extends StatelessWidget {
   final bool animate;
 
   WindowRestoreMaximizeButton({
-    Key? key,
+    super.key,
     this.colors,
     this.onPressed,
     this.animate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return IsZoomed(WindowPlus.instance.handle) != 0
+    return IsZoomed(WindowPlus.instance.hwnd)
         ? WindowRestoreButton(
             colors: colors,
             onPressed: onPressed,
@@ -288,10 +288,10 @@ class MouseStateBuilder extends StatefulWidget {
   final MouseStateBuilderCallback builder;
   final VoidCallback? onPressed;
   const MouseStateBuilder({
-    Key? key,
+    super.key,
     required this.builder,
     required this.onPressed,
-  }) : super(key: key);
+  });
   @override
   MouseStateBuilderState createState() => MouseStateBuilderState();
 }
@@ -348,10 +348,10 @@ class WindowCaption extends StatelessWidget {
   final Widget? child;
   final Brightness? brightness;
   WindowCaption({
-    Key? key,
+    super.key,
     this.child,
     this.brightness,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
