@@ -14,7 +14,7 @@ window_plus
   s.author           = { 'Hitesh Kumar Saini' => 'saini123hitesh@gmail.com' }
 
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'window_plus/Sources/window_plus/**/*.swift'
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
