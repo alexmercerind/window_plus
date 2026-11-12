@@ -4,8 +4,6 @@
 // All rights reserved. Use of this source code is governed by MIT license that can be found in the LICENSE file.
 #include "include/window_plus/window_plus_plugin_c_api.h"
 
-#include <thread>
-
 #include "common.h"
 #include "window_plus_plugin.h"
 
@@ -47,7 +45,12 @@ void WindowPlusPluginCApiRegisterWithRegistrar(FlutterDesktopPluginRegistrarRef 
 void WindowPlusPluginCApiHandleSingleInstance(const wchar_t class_name[], const wchar_t window_name[]) {
   auto window = ::FindWindow(class_name == NULL ? kDefaultWindowClassName : class_name, window_name);
   if (window != NULL) {
+    auto visible = ::IsWindowVisible(window);
     auto minimized = ::IsIconic(window);
+    if (!visible) {
+      // Hidden window, let the new instance start.
+      return;
+    }
     if (minimized) {
       // We need to un-minimize the window if it is minimized.
       ::ShowWindow(window, SW_SHOW);
@@ -58,17 +61,16 @@ void WindowPlusPluginCApiHandleSingleInstance(const wchar_t class_name[], const 
     auto command_line_arguments = GetCommandLineArguments();
     auto cds = COPYDATASTRUCT{};
     cds.dwData = 1;
+    DWORD_PTR copy_data_result = 0;
     if (!command_line_arguments.empty()) {
       cds.cbData = static_cast<DWORD>(command_line_arguments.front().size() + 1);
       cds.lpData = reinterpret_cast<void*>(const_cast<char*>(command_line_arguments.front().c_str()));
-      ::SendMessage(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds));
+      ::SendMessageTimeoutW(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds), SMTO_ABORTIFHUNG, 2000, &copy_data_result);
     } else {
       cds.cbData = 1;
       cds.lpData = nullptr;
-      ::SendMessage(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds));
+      ::SendMessageTimeoutW(window, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds), SMTO_ABORTIFHUNG, 2000, &copy_data_result);
     }
-    // Keep current (new) process alive for a brief amount of time.
-    std::this_thread::sleep_for(std::chrono::seconds(10));
     return ExitProcess(0);
   }
 }

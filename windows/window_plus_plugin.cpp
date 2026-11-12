@@ -353,7 +353,8 @@ std::optional<HRESULT> WindowPlusPlugin::WindowProcDelegate(HWND window, UINT me
       if (enable_event_streams_) {
         channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       }
-      return 0;
+      // Let the engine handle |WM_SIZE| (swapchain/viewport).
+      break;
     }
     case WM_WINDOWPOSCHANGING: {
       auto window_position = reinterpret_cast<WINDOWPOS*>(lparam);
@@ -461,7 +462,8 @@ std::optional<HRESULT> WindowPlusPlugin::FallbackWindowProcDelegate(HWND window,
       if (enable_event_streams_) {
         channel_->InvokeMethod(kWindowResizedMethodName, nullptr, nullptr);
       }
-      return 0;
+      // Let the engine handle |WM_SIZE| (swapchain/viewport).
+      break;
     }
     case WM_WINDOWPOSCHANGING: {
       auto window_position = reinterpret_cast<WINDOWPOS*>(lparam);
